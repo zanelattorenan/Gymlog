@@ -9,7 +9,7 @@
 <body class="bg-slate-100 min-h-screen flex justify-center">
   <div class="w-full max-w-3xl bg-white shadow-lg rounded-xl m-3 p-4 space-y-4">
     <h1 class="text-2xl font-bold text-slate-800 text-center">
-      GymLog
+      GymLog – Treinos A / B / C / D / E
     </h1>
 
     <!-- Tabs -->
@@ -65,8 +65,14 @@
       </div>
       <div id="calendar-grid" class="grid grid-cols-7 gap-1 text-xs"></div>
 
-      <div id="day-details" class="hidden border rounded-lg p-3 bg-slate-50">
-        <p id="day-details-title" class="font-semibold mb-2"></p>
+      <div id="day-details" class="hidden border rounded-lg p-3 bg-slate-50 space-y-2">
+        <div class="flex justify-between items-center">
+          <p id="day-details-title" class="font-semibold mb-1"></p>
+          <button class="text-xs text-red-600 underline"
+                  onclick="deleteDayLogs()">
+            Excluir todos registros deste dia
+          </button>
+        </div>
         <div id="day-details-body" class="space-y-1 text-sm"></div>
       </div>
     </section>
@@ -90,7 +96,7 @@
     <!-- Configurar treinos -->
     <section id="view-config" class="space-y-4 hidden">
       <p class="text-sm text-slate-600">
-        Aqui você pode adicionar/remover exercícios e cadastrar o link do GIF.
+        Aqui você pode adicionar/remover/editar exercícios e cadastrar o link do GIF.
       </p>
 
       <div>
@@ -102,7 +108,7 @@
         <p id="config-title" class="font-semibold text-sm"></p>
 
         <div class="space-y-2">
-          <p class="text-xs font-medium text-slate-600">Adicionar exercício</p>
+          <p id="cfg-form-title" class="text-xs font-medium text-slate-600">Adicionar exercício</p>
           <div class="flex flex-col gap-2 sm:flex-row">
             <input id="cfg-name" type="text" placeholder="Nome (ex: Agachamento livre)"
                    class="flex-1 border rounded px-2 py-1 text-sm">
@@ -111,10 +117,18 @@
           </div>
           <input id="cfg-gif" type="text" placeholder="URL do GIF (opcional)"
                  class="w-full border rounded px-2 py-1 text-sm">
-          <button class="mt-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                  onclick="addExerciseConfig()">
-            Adicionar exercício
-          </button>
+          <div class="flex gap-2 mt-1">
+            <button id="cfg-add-btn"
+                    class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                    onclick="submitExerciseConfig()">
+              Adicionar exercício
+            </button>
+            <button id="cfg-cancel-edit-btn"
+                    class="hidden px-3 py-1 bg-slate-300 text-slate-800 text-xs rounded hover:bg-slate-400"
+                    onclick="cancelEditExercise()">
+              Cancelar edição
+            </button>
+          </div>
         </div>
 
         <div id="config-exercise-list" class="space-y-2 text-sm">
@@ -211,12 +225,20 @@
       localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
     }
 
+    function cloneDefaultWorkouts() {
+      // structuredClone pode não existir em navegadores muito antigos
+      if (typeof structuredClone === "function") {
+        return structuredClone(DEFAULT_WORKOUTS);
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_WORKOUTS));
+    }
+
     function loadWorkouts() {
       try {
         const data = JSON.parse(localStorage.getItem(WORKOUTS_KEY));
-        return data || structuredClone(DEFAULT_WORKOUTS);
+        return data || cloneDefaultWorkouts();
       } catch {
-        return structuredClone(DEFAULT_WORKOUTS);
+        return cloneDefaultWorkouts();
       }
     }
     function saveWorkouts() {
@@ -228,7 +250,9 @@
     let workouts = loadWorkouts();
     let selectedWorkout = null;
     let currentMonth = new Date();
-    let configWorkout = null; // treino selecionado na aba config
+    let configWorkout = null;     // treino selecionado na aba config
+    let editExerciseIndex = null; // índice do exercício em edição na aba config
+    let lastDayDetailsDate = null; // data do painel aberto no calendário
 
     // ---------- Util ----------
     function todayISO() {
@@ -327,12 +351,13 @@
         const initObs = todayLast ? todayLast.note : "";
 
         const safeName = ex.name.replace(/"/g, '&quot;');
+        const safeGif = ex.gif ? ex.gif.replace(/'/g,"&#39;") : "";
 
         return `
           <div class="border rounded-lg p-3 bg-slate-50 space-y-1" data-ex="${safeName}">
             <button type="button"
                     class="font-medium text-sm text-blue-700 hover:underline text-left"
-                    onclick="openGif('${safeName}','${ex.gif ? ex.gif.replace(/'/g,"&#39;") : ""}')">
+                    onclick="openGif('${safeName}','${safeGif}')">
               ${safeName}
             </button>
             <p class="text-xs text-slate-500">Séries / reps: ${ex.reps}</p>
@@ -454,12 +479,15 @@
       }
 
       document.getElementById("day-details").classList.add("hidden");
+      lastDayDetailsDate = null;
     }
 
     function showDayDetails(dateISO) {
       const box = document.getElementById("day-details");
       const title = document.getElementById("day-details-title");
       const body = document.getElementById("day-details-body");
+
+      lastDayDetailsDate = dateISO;
 
       const dayLogs = logs
         .filter(l => l.date === dateISO)
@@ -482,6 +510,19 @@
         `).join("");
       }
       box.classList.remove("hidden");
+    }
+
+    function deleteDayLogs() {
+      if (!lastDayDetailsDate) return;
+      if (!confirm(`Excluir TODOS os registros do dia ${formatBR(lastDayDetailsDate)}?`)) return;
+
+      logs = logs.filter(l => l.date !== lastDayDetailsDate);
+      saveLogs(logs);
+      renderCalendar();
+      fillExerciseSelect();
+      renderExerciseHistory();
+      document.getElementById("day-details").classList.add("hidden");
+      lastDayDetailsDate = null;
     }
 
     // ---------- Histórico por exercício ----------
@@ -548,7 +589,13 @@
         if (configWorkout === letter) {
           btn.classList.add("bg-blue-600","text-white","border-blue-600");
         }
-        btn.onclick = () => { configWorkout = letter; renderConfigButtons(); renderConfigPanel(); };
+        btn.onclick = () => {
+          configWorkout = letter;
+          editExerciseIndex = null;
+          resetConfigFormUI();
+          renderConfigButtons();
+          renderConfigPanel();
+        };
         container.appendChild(btn);
       });
     }
@@ -575,16 +622,48 @@
           <div class="text-xs">
             <p class="font-medium">${ex.name}</p>
             <p class="text-slate-500">Reps: ${ex.reps}</p>
-            ${ex.gif ? `<p class="text-emerald-600">GIF cadastrado</p>` : ""}
+            ${ex.gif ? `<p class="text-emerald-600">GIF cadastrado</p>` : "<p class='text-slate-400'>Sem GIF</p>"}
           </div>
-          <button class="text-xs text-red-600" onclick="removeExercise(${idx})">
-            Remover
-          </button>
+          <div class="flex gap-2">
+            <button class="text-xs text-blue-600" onclick="startEditExercise(${idx})">
+              Editar
+            </button>
+            <button class="text-xs text-red-600" onclick="removeExercise(${idx})">
+              Remover
+            </button>
+          </div>
         </div>
       `).join("");
     }
 
-    function addExerciseConfig() {
+    function resetConfigFormUI() {
+      document.getElementById("cfg-name").value = "";
+      document.getElementById("cfg-reps").value = "";
+      document.getElementById("cfg-gif").value = "";
+      editExerciseIndex = null;
+      document.getElementById("cfg-form-title").textContent = "Adicionar exercício";
+      document.getElementById("cfg-add-btn").textContent = "Adicionar exercício";
+      document.getElementById("cfg-cancel-edit-btn").classList.add("hidden");
+    }
+
+    function startEditExercise(index) {
+      if (!configWorkout) return;
+      const ex = workouts[configWorkout].exercises[index];
+      document.getElementById("cfg-name").value = ex.name;
+      document.getElementById("cfg-reps").value = ex.reps;
+      document.getElementById("cfg-gif").value = ex.gif || "";
+      editExerciseIndex = index;
+
+      document.getElementById("cfg-form-title").textContent = "Editar exercício";
+      document.getElementById("cfg-add-btn").textContent = "Salvar edição";
+      document.getElementById("cfg-cancel-edit-btn").classList.remove("hidden");
+    }
+
+    function cancelEditExercise() {
+      resetConfigFormUI();
+    }
+
+    function submitExerciseConfig() {
       if (!configWorkout) return;
       const nameEl = document.getElementById("cfg-name");
       const repsEl = document.getElementById("cfg-reps");
@@ -599,13 +678,16 @@
         return;
       }
 
-      workouts[configWorkout].exercises.push({ name, reps, gif });
+      if (editExerciseIndex !== null) {
+        // edição
+        workouts[configWorkout].exercises[editExerciseIndex] = { name, reps, gif };
+      } else {
+        // inclusão
+        workouts[configWorkout].exercises.push({ name, reps, gif });
+      }
+
       saveWorkouts();
-
-      nameEl.value = "";
-      repsEl.value = "";
-      gifEl.value = "";
-
+      resetConfigFormUI();
       renderConfigPanel();
       renderWorkoutButtons();
       if (selectedWorkout === configWorkout) renderExerciseList();
@@ -616,6 +698,7 @@
       if (!configWorkout) return;
       workouts[configWorkout].exercises.splice(index, 1);
       saveWorkouts();
+      resetConfigFormUI();
       renderConfigPanel();
       if (selectedWorkout === configWorkout) renderExerciseList();
       fillExerciseSelect();
@@ -624,8 +707,9 @@
     function resetCurrentWorkoutToDefault() {
       if (!configWorkout) return;
       if (!confirm(`Resetar o Treino ${configWorkout} para o padrão inicial?`)) return;
-      workouts[configWorkout] = structuredClone(DEFAULT_WORKOUTS[configWorkout]);
+      workouts[configWorkout] = cloneDefaultWorkouts()[configWorkout];
       saveWorkouts();
+      resetConfigFormUI();
       renderConfigPanel();
       renderWorkoutButtons();
       if (selectedWorkout === configWorkout) renderExerciseList();
@@ -634,8 +718,9 @@
 
     function resetAllWorkouts() {
       if (!confirm("Resetar TODOS os treinos para o padrão inicial?")) return;
-      workouts = structuredClone(DEFAULT_WORKOUTS);
+      workouts = cloneDefaultWorkouts();
       saveWorkouts();
+      resetConfigFormUI();
       renderConfigButtons();
       renderConfigPanel();
       renderWorkoutButtons();
