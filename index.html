@@ -87,7 +87,8 @@
   </div>
 
   <script>
-    // ---------- Dados fixos dos treinos ----------
+
+     // ---------- Dados fixos dos treinos ----------
     const WORKOUTS = {
       A: {
         nome: "Treino A (Quadríceps / Glúteo)",
@@ -392,4 +393,73 @@
             <div>
               <p class="text-sm font-medium">${l.exercise}</p>
               <p class="text-xs text-slate-500">
-                Tr
+                Treino ${l.workout} – ${l.weight} kg
+                ${l.note ? ` – ${l.note}` : ""}
+              </p>
+            </div>
+          </div>
+        `).join("");
+      }
+      box.classList.remove("hidden");
+    }
+
+    // ---------- Histórico por exercício ----------
+    function fillExerciseSelect() {
+      const select = document.getElementById("exercise-select");
+      const existing = select.value;
+      const allNames = new Set();
+      Object.values(WORKOUTS).forEach(w => {
+        w.exercises.forEach(e => allNames.add(e.name));
+      });
+      const list = Array.from(allNames).sort();
+      select.innerHTML = '<option value="">-- selecione --</option>';
+      list.forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      if (existing) select.value = existing;
+    }
+
+    function renderExerciseHistory() {
+      const select = document.getElementById("exercise-select");
+      const name = select.value;
+      const container = document.getElementById("exercise-history");
+      if (!name) {
+        container.innerHTML =
+          "<p class='text-slate-500 italic text-sm'>Selecione um exercício.</p>";
+        return;
+      }
+      const hist = logs
+        .filter(l => l.exercise === name)
+        .sort((a,b) => b.timestamp - a.timestamp);
+
+      if (!hist.length) {
+        container.innerHTML =
+          `<p class='text-slate-500 text-sm'>Nenhum registro ainda para "${name}".</p>`;
+        return;
+      }
+
+      container.innerHTML = hist.map(l => `
+        <div class="border-l-4 border-emerald-500 bg-emerald-50 px-3 py-2 flex justify-between">
+          <div>
+            <p class="text-sm font-semibold">${l.weight} kg</p>
+            <p class="text-xs text-slate-600">
+              Treino ${l.workout} – ${formatBR(l.date)}
+              ${l.note ? `<br><span class="text-slate-500">Obs: ${l.note}</span>` : ""}
+            </p>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // ---------- Init ----------
+    (function init() {
+      document.getElementById("today-date").textContent = formatBR(todayISO());
+      renderWorkoutButtons();
+      switchView("today");
+    })();
+  </script>
+</body>
+</html>
