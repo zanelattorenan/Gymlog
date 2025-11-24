@@ -3,14 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GymLog – Treinos (v1.2)</title>
+  <title>GymLog – Treinos</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 min-h-screen flex justify-center">
-  <div class="w-full max-w-3xl bg-white shadow-lg rounded-xl m-3 p-4 space-y-4">
-    <h1 class="text-2xl font-bold text-slate-800 text-center">
-      GymLog <span class="text-xs text-slate-400">(v1.2)</span>
+<body class="bg-slate-100 min-h-screen flex flex-col items-center justify-center">
+
+  <!-- TELA DE LOGIN -->
+  <div id="login-screen" class="w-full max-w-md bg-white shadow-lg rounded-xl m-3 p-4 space-y-4">
+    <h1 class="text-xl font-bold text-slate-800 text-center">
+      GymLog – Acesso
     </h1>
+    <p class="text-xs text-slate-500 text-center">
+      Crie um usuário para guardar seus treinos neste dispositivo.
+    </p>
+
+    <div class="space-y-2">
+      <label class="text-sm font-medium block" for="login-username">Usuário</label>
+      <input id="login-username" type="text" class="w-full border rounded px-3 py-2 text-sm"
+             placeholder="ex: renan" />
+    </div>
+
+    <div class="space-y-2">
+      <label class="text-sm font-medium block" for="login-password">Senha</label>
+      <input id="login-password" type="password" class="w-full border rounded px-3 py-2 text-sm"
+             placeholder="mínimo 4 caracteres" />
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-2 mt-2">
+      <button class="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700"
+              onclick="handleLogin()">
+        Entrar
+      </button>
+      <button class="flex-1 border border-blue-600 text-blue-600 text-sm py-2 rounded hover:bg-blue-50"
+              onclick="handleRegister()">
+        Criar conta
+      </button>
+    </div>
+
+    <p id="login-msg" class="text-xs text-center text-red-500 h-4"></p>
+
+    <div id="login-users-info" class="text-[11px] text-slate-500 mt-2">
+      <!-- lista de usuários existentes (se houver) -->
+    </div>
+  </div>
+
+  <!-- APP PRINCIPAL -->
+  <div id="app-screen" class="hidden w-full max-w-3xl bg-white shadow-lg rounded-xl m-3 p-4 space-y-4">
+    <div class="flex justify-between items-start gap-2">
+      <h1 class="text-2xl font-bold text-slate-800">
+        GymLog
+      </h1>
+      <div class="text-right text-xs">
+        <div id="user-label" class="text-slate-500 mb-1"></div>
+        <button class="border border-slate-300 px-2 py-1 rounded hover:bg-slate-100"
+                onclick="logout()">
+          Sair
+        </button>
+      </div>
+    </div>
 
     <!-- Tabs -->
     <div class="flex border-b text-sm">
@@ -190,6 +240,184 @@
   </div>
 
   <script>
+    // ---------- Login / Usuários ----------
+    const USERS_KEY = "gymlog-users-v1";
+    const LOGS_KEY_BASE = "gymlog-registros-v1-";
+    const WORKOUTS_KEY_BASE = "gymlog-workouts-v1-";
+
+    let currentUser = null;
+    let logs = [];
+    let workouts = {};
+    let selectedWorkout = null;
+    let currentMonth = new Date();
+    let configWorkout = null;
+    let editExerciseIndex = null;
+    let lastDayDetailsDate = null;
+
+    function loadUsers() {
+      try {
+        return JSON.parse(localStorage.getItem(USERS_KEY)) || {};
+      } catch {
+        return {};
+      }
+    }
+    function saveUsers(users) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+
+    function getLogsKey() {
+      return LOGS_KEY_BASE + currentUser;
+    }
+    function getWorkoutsKey() {
+      return WORKOUTS_KEY_BASE + currentUser;
+    }
+
+    function loadLogs() {
+      if (!currentUser) return [];
+      try { return JSON.parse(localStorage.getItem(getLogsKey())) || []; }
+      catch { return []; }
+    }
+    function saveLogsData(logsData) {
+      if (!currentUser) return;
+      localStorage.setItem(getLogsKey(), JSON.stringify(logsData));
+    }
+
+    function cloneDefaultWorkouts() {
+      if (typeof structuredClone === "function") {
+        return structuredClone(DEFAULT_WORKOUTS);
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_WORKOUTS));
+    }
+
+    function loadWorkouts() {
+      if (!currentUser) return cloneDefaultWorkouts();
+      try {
+        const data = JSON.parse(localStorage.getItem(getWorkoutsKey()));
+        return data || cloneDefaultWorkouts();
+      } catch {
+        return cloneDefaultWorkouts();
+      }
+    }
+    function saveWorkouts() {
+      if (!currentUser) return;
+      localStorage.setItem(getWorkoutsKey(), JSON.stringify(workouts));
+    }
+
+    function showLoginMsg(text, isError = true) {
+      const el = document.getElementById("login-msg");
+      el.textContent = text || "";
+      el.classList.remove("text-red-500", "text-emerald-600");
+      el.classList.add(isError ? "text-red-500" : "text-emerald-600");
+      if (text) {
+        setTimeout(() => { el.textContent = ""; }, 4000);
+      }
+    }
+
+    function refreshLoginUsersInfo() {
+      const users = loadUsers();
+      const el = document.getElementById("login-users-info");
+      const names = Object.keys(users);
+      if (!names.length) {
+        el.textContent = "Nenhum usuário cadastrado ainda neste navegador.";
+        return;
+      }
+      el.innerHTML =
+        "Usuários já cadastrados neste navegador: " +
+        names.map(n => `<span class="font-semibold">${n}</span>`).join(", ");
+    }
+
+    function handleRegister() {
+      const username = document.getElementById("login-username").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+
+      if (!username || username.length < 3) {
+        showLoginMsg("Usuário deve ter pelo menos 3 caracteres.");
+        return;
+      }
+      if (/\s/.test(username)) {
+        showLoginMsg("Usuário não pode ter espaços.");
+        return;
+      }
+      if (!password || password.length < 4) {
+        showLoginMsg("Senha deve ter pelo menos 4 caracteres.");
+        return;
+      }
+
+      const users = loadUsers();
+      if (users[username]) {
+        showLoginMsg("Esse usuário já existe. Use outro nome ou faça login.");
+        return;
+      }
+
+      users[username] = { password };
+      saveUsers(users);
+
+      // cria treinos padrão A–E e zera logs
+      currentUser = username;
+      workouts = cloneDefaultWorkouts();
+      logs = [];
+      saveWorkouts();
+      saveLogsData(logs);
+
+      showLoginMsg("Conta criada e login realizado.", false);
+      setTimeout(() => {
+        enterApp(username);
+      }, 500);
+      refreshLoginUsersInfo();
+    }
+
+    function handleLogin() {
+      const username = document.getElementById("login-username").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+
+      if (!username || !password) {
+        showLoginMsg("Preencha usuário e senha.");
+        return;
+      }
+
+      const users = loadUsers();
+      if (!users[username]) {
+        showLoginMsg("Usuário não encontrado. Crie uma conta.");
+        return;
+      }
+      if (users[username].password !== password) {
+        showLoginMsg("Senha incorreta.");
+        return;
+      }
+
+      enterApp(username);
+    }
+
+    function enterApp(username) {
+      currentUser = username;
+      logs = loadLogs();
+      workouts = loadWorkouts();
+
+      document.getElementById("user-label").textContent =
+        "Usuário: " + currentUser;
+
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("hidden");
+
+      initAppForUser();
+    }
+
+    function logout() {
+      currentUser = null;
+      logs = [];
+      workouts = {};
+      selectedWorkout = null;
+      configWorkout = null;
+      editExerciseIndex = null;
+      lastDayDetailsDate = null;
+
+      document.getElementById("app-screen").classList.add("hidden");
+      document.getElementById("login-screen").classList.remove("hidden");
+      document.getElementById("login-password").value = "";
+      showLoginMsg("");
+      refreshLoginUsersInfo();
+    }
+
     // ---------- Helper: gera URL de demonstração no YouTube ----------
     function demoUrl(nomeExercicio) {
       const query = `${nomeExercicio} exercício academia execução correta`;
@@ -306,46 +534,6 @@
       { id: "prancha-lat",   grupo: "Core / Abdômen", name: "Prancha lateral",             reps: "3x20-30s cada lado", url: demoUrl("Prancha lateral isométrica") },
     ];
 
-    // ---------- Storage ----------
-    const LOGS_KEY = "gymlog-registros-v1";
-    const WORKOUTS_KEY = "gymlog-workouts-v1";
-
-    function loadLogs() {
-      try { return JSON.parse(localStorage.getItem(LOGS_KEY)) || []; }
-      catch { return []; }
-    }
-    function saveLogs(logs) {
-      localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
-    }
-
-    function cloneDefaultWorkouts() {
-      if (typeof structuredClone === "function") {
-        return structuredClone(DEFAULT_WORKOUTS);
-      }
-      return JSON.parse(JSON.stringify(DEFAULT_WORKOUTS));
-    }
-
-    function loadWorkouts() {
-      try {
-        const data = JSON.parse(localStorage.getItem(WORKOUTS_KEY));
-        return data || cloneDefaultWorkouts();
-      } catch {
-        return cloneDefaultWorkouts();
-      }
-    }
-    function saveWorkouts() {
-      localStorage.setItem(WORKOUTS_KEY, JSON.stringify(workouts));
-    }
-
-    // ---------- Estado ----------
-    let logs = loadLogs();
-    let workouts = loadWorkouts();
-    let selectedWorkout = null;
-    let currentMonth = new Date();
-    let configWorkout = null;
-    let editExerciseIndex = null;
-    let lastDayDetailsDate = null;
-
     // ---------- Util ----------
     function todayISO() {
       return new Date().toISOString().slice(0, 10);
@@ -353,6 +541,13 @@
     function formatBR(dateISO) {
       const [y, m, d] = dateISO.split("-");
       return `${d}/${m}/${y}`;
+    }
+
+    function showMsg(text) {
+      const el = document.getElementById("msg");
+      el.textContent = text;
+      if (!text) return;
+      setTimeout(() => { el.textContent = ""; }, 3000);
     }
 
     // ---------- Tabs ----------
@@ -515,18 +710,11 @@
       }
 
       logs = logs.concat(newLogs);
-      saveLogs(logs);
+      saveLogsData(logs);
       showMsg(`Treino ${selectedWorkout} salvo com ${newLogs.length} registros.`);
       renderCalendar();
       fillExerciseSelect();
       renderExerciseHistory();
-    }
-
-    function showMsg(text) {
-      const el = document.getElementById("msg");
-      el.textContent = text;
-      if (!text) return;
-      setTimeout(() => { el.textContent = ""; }, 3000);
     }
 
     // ---------- Calendário ----------
@@ -623,7 +811,7 @@
       if (!confirm(`Excluir TODOS os registros do dia ${formatBR(lastDayDetailsDate)}?`)) return;
 
       logs = logs.filter(l => l.date !== lastDayDetailsDate);
-      saveLogs(logs);
+      saveLogsData(logs);
       renderCalendar();
       fillExerciseSelect();
       renderExerciseHistory();
@@ -922,12 +1110,19 @@
       };
     }
 
-    // ---------- Init ----------
-    (function init() {
+    // ---------- Init por usuário ----------
+    function initAppForUser() {
       document.getElementById("today-date").textContent = formatBR(todayISO());
       renderWorkoutButtons();
-      fillExerciseTemplatesSelect();
+      renderExerciseList();
+      fillExerciseSelect();
       switchView("today");
+    }
+
+    // ---------- Init geral ----------
+    (function init() {
+      fillExerciseTemplatesSelect();
+      refreshLoginUsersInfo();
     })();
   </script>
 </body>
