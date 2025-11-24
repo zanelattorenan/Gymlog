@@ -321,10 +321,7 @@
         el.textContent = "Nenhum usuário cadastrado ainda neste navegador.";
         return;
       }
-      el.innerHTML =
-        "Usuários já cadastrados neste navegador: " +
-        names.map(n => `<span class="font-semibold">${n}</span>`).join(", ");
-    }
+     
 
     function handleRegister() {
       const username = document.getElementById("login-username").value.trim();
