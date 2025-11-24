@@ -71,7 +71,7 @@
       <button id="tab-history" class="px-4 py-2 text-slate-600"
               onclick="switchView('history')">Histórico</button>
       <button id="tab-config" class="px-4 py-2 text-slate-600"
-              onclick="switchView('config')">Configurar treinos</button>
+              onclick="switchView('config')">Configurar </button>
     </div>
 
     <!-- Treino de hoje -->
@@ -83,7 +83,7 @@
       <div>
         <p class="text-sm font-medium mb-1">Selecione o treino do dia:</p>
         <div id="workout-buttons" class="flex gap-2 flex-wrap">
-          <!-- Botões de treinos dinâmicos -->
+          <!-- Botões de  dinâmicos -->
         </div>
       </div>
 
@@ -143,16 +143,16 @@
       </div>
     </section>
 
-    <!-- Configurar treinos -->
+    <!-- Configurar  -->
     <section id="view-config" class="space-y-4 hidden">
       <p class="text-sm text-slate-600">
-        Aqui você pode criar treinos (A, B, C...) e adicionar/remover/editar exercícios,
+        Aqui você pode criar  (A, B, C...) e adicionar/remover/editar exercícios,
         com lista de exercícios prontos + vídeos.
       </p>
 
       <!-- Adicionar treino -->
       <div class="mb-2 space-y-2">
-        <p class="text-sm font-medium">Treinos disponíveis</p>
+        <p class="text-sm font-medium"> disponíveis</p>
         <div class="flex gap-2 items-center text-xs">
           <input id="cfg-new-workout-letter" type="text" maxlength="1"
                  class="w-10 border rounded px-2 py-1 text-center uppercase"
@@ -234,7 +234,7 @@
 
       <button class="text-xs text-red-500 underline"
               onclick="resetAllWorkouts()">
-        Resetar TODOS os treinos para o padrão inicial (A–E)
+        Resetar TODOS os  para o padrão inicial (A–E)
       </button>
     </section>
   </div>
@@ -342,7 +342,7 @@
       users[username] = { password };
       saveUsers(users);
 
-      // cria treinos padrão A–E e zera logs
+      // cria  padrão A–E e zera logs
       currentUser = username;
       workouts = cloneDefaultWorkouts();
       logs = [];
@@ -414,7 +414,7 @@
       return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
     }
 
-    // ---------- Dados padrão dos treinos A–E ----------
+    // ---------- Dados padrão dos  A–E ----------
     const DEFAULT_WORKOUTS = {
       A: {
         nome: "Treino A (Quadríceps / Glúteo)",
@@ -572,11 +572,11 @@
 
       const keys = Object.keys(workouts).sort();
       if (!keys.length) {
-        container.innerHTML = "<p class='text-xs text-slate-500'>Nenhum treino cadastrado. Crie um na aba Configurar treinos.</p>";
+        container.innerHTML = "<p class='text-xs text-slate-500'>Nenhum treino cadastrado. Crie um na aba Configurar .</p>";
         selectedWorkout = null;
         document.getElementById("save-today-btn").classList.add("hidden");
         document.getElementById("exercise-list").innerHTML =
-          "<p class='text-xs text-slate-500'>Sem treinos. Vá em Configurar treinos.</p>";
+          "<p class='text-xs text-slate-500'>Sem . Vá em Configurar .</p>";
         return;
       }
 
