@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GymLog Simples v1.1</title>
+  <title>GymLog – Treinos (v1.2)</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen flex justify-center">
   <div class="w-full max-w-3xl bg-white shadow-lg rounded-xl m-3 p-4 space-y-4">
     <h1 class="text-2xl font-bold text-slate-800 text-center">
-      GymLog <span class="text-xs text-slate-400">(v1.1)</span>
+      GymLog – Treinos A / B / C / D / E <span class="text-xs text-slate-400">(v1.2)</span>
     </h1>
 
     <!-- Tabs -->
@@ -33,7 +33,7 @@
       <div>
         <p class="text-sm font-medium mb-1">Selecione o treino do dia:</p>
         <div id="workout-buttons" class="flex gap-2 flex-wrap">
-          <!-- Botões A–E -->
+          <!-- Botões de treinos dinâmicos -->
         </div>
       </div>
 
@@ -96,27 +96,66 @@
     <!-- Configurar treinos -->
     <section id="view-config" class="space-y-4 hidden">
       <p class="text-sm text-slate-600">
-        Aqui você pode adicionar/remover/editar exercícios e cadastrar o link do GIF.
+        Aqui você pode criar treinos (A, B, C...) e adicionar/remover/editar exercícios,
+        com lista de exercícios prontos + vídeos.
       </p>
 
+      <!-- Adicionar treino -->
+      <div class="mb-2 space-y-2">
+        <p class="text-sm font-medium">Treinos disponíveis</p>
+        <div class="flex gap-2 items-center text-xs">
+          <input id="cfg-new-workout-letter" type="text" maxlength="1"
+                 class="w-10 border rounded px-2 py-1 text-center uppercase"
+                 placeholder="F">
+          <input id="cfg-new-workout-name" type="text"
+                 class="flex-1 border rounded px-2 py-1"
+                 placeholder="Nome opcional (ex: Inferiores)">
+          <button class="px-3 py-1 bg-emerald-600 text-white rounded text-xs"
+                  onclick="addWorkoutConfig()">
+            Adicionar treino
+          </button>
+        </div>
+      </div>
+
       <div>
-        <p class="text-sm font-medium mb-1">Selecione o treino:</p>
+        <p class="text-xs text-slate-500 mb-1">Clique em um treino para editar os exercícios.</p>
         <div id="config-buttons" class="flex gap-2 flex-wrap"></div>
       </div>
 
       <div id="config-current" class="border rounded-lg p-3 bg-slate-50 space-y-3 hidden">
-        <p id="config-title" class="font-semibold text-sm"></p>
+        <div class="flex justify-between items-center">
+          <p id="config-title" class="font-semibold text-sm"></p>
+          <div class="flex gap-2">
+            <button class="text-xs text-red-500 underline"
+                    onclick="deleteCurrentWorkout()">
+              Excluir treino
+            </button>
+          </div>
+        </div>
 
+        <!-- Formulário exercício -->
         <div class="space-y-2">
           <p id="cfg-form-title" class="text-xs font-medium text-slate-600">Adicionar exercício</p>
-          <div class="flex flex-col gap-2 sm:flex-row">
+
+          <!-- Lista suspensa de exercícios prontos -->
+          <div>
+            <label class="block text-xs text-slate-600 mb-1">
+              Escolher exercício da lista (preenche nome, séries e vídeo):
+            </label>
+            <select id="cfg-template" class="w-full border rounded px-2 py-1 text-xs">
+              <option value="">-- escolher da lista --</option>
+            </select>
+          </div>
+
+          <div class="flex flex-col gap-2 sm:flex-row mt-1">
             <input id="cfg-name" type="text" placeholder="Nome (ex: Agachamento livre)"
                    class="flex-1 border rounded px-2 py-1 text-sm">
             <input id="cfg-reps" type="text" placeholder="Séries/reps (ex: 4x12)"
                    class="flex-1 border rounded px-2 py-1 text-sm">
           </div>
-          <input id="cfg-gif" type="text" placeholder="URL do GIF (opcional)"
+          <input id="cfg-gif" type="text" placeholder="URL do vídeo (YouTube)"
                  class="w-full border rounded px-2 py-1 text-sm">
+
           <div class="flex gap-2 mt-1">
             <button id="cfg-add-btn"
                     class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
@@ -132,86 +171,140 @@
         </div>
 
         <div id="config-exercise-list" class="space-y-2 text-sm">
-          <!-- lista de exercícios do treino selecionado -->
+          <!-- lista de exercícios -->
         </div>
 
-        <button class="mt-2 text-xs text-red-600 underline"
-                onclick="resetCurrentWorkoutToDefault()">
-          Voltar treino selecionado para o padrão inicial
-        </button>
+        <div class="flex flex-wrap gap-3 mt-2">
+          <button class="text-xs text-red-600 underline"
+                  onclick="resetCurrentWorkoutToDefault()">
+            Voltar treino selecionado para o padrão inicial (A–E)
+          </button>
+        </div>
       </div>
 
       <button class="text-xs text-red-500 underline"
               onclick="resetAllWorkouts()">
-        Resetar TODOS os treinos para o padrão inicial
+        Resetar TODOS os treinos para o padrão inicial (A–E)
       </button>
     </section>
   </div>
 
   <script>
-    // ---------- Dados padrão dos treinos ----------
+    // ---------- Helper: gera URL de demonstração no YouTube ----------
+    function demoUrl(nomeExercicio) {
+      const query = `${nomeExercicio} exercício academia execução correta`;
+      return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    }
+
+    // ---------- Dados padrão dos treinos A–E ----------
     const DEFAULT_WORKOUTS = {
       A: {
         nome: "Treino A (Quadríceps / Glúteo)",
         exercises: [
-          { name: "Agachamento no smith", reps: "4x12", gif: "" },
-          { name: "Leg 45º", reps: "4x10", gif: "" },
-          { name: "Afundo", reps: "3x10 cada perna", gif: "" },
-          { name: "Cadeira extensora", reps: "4x12", gif: "" },
-          { name: "Adutora máquina", reps: "4x10", gif: "" },
-          { name: "Panturrilha na máquina", reps: "4x15", gif: "" },
-          { name: "Abdominal supra", reps: "4x15", gif: "" },
+          { name: "Agachamento no smith",         reps: "4x12",            gif: demoUrl("Agachamento no smith") },
+          { name: "Leg 45º",                      reps: "4x10",            gif: demoUrl("Leg 45") },
+          { name: "Afundo",                       reps: "3x10 cada perna", gif: demoUrl("Afundo com halteres") },
+          { name: "Cadeira extensora",            reps: "4x12",            gif: demoUrl("Cadeira extensora") },
+          { name: "Adutora máquina",              reps: "4x10",            gif: demoUrl("Adutora máquina") },
+          { name: "Panturrilha na máquina",       reps: "4x15",            gif: demoUrl("Panturrilha em pé na máquina") },
+          { name: "Abdominal supra",              reps: "4x15",            gif: demoUrl("Abdominal supra no solo") },
         ],
       },
       B: {
         nome: "Treino B (Costas / Bíceps)",
         exercises: [
-          { name: "Puxador frente", reps: "4x12", gif: "" },
-          { name: "Remada baixa aberta", reps: "4x10", gif: "" },
-          { name: "Remada curvada cavalinho (pegada neutra)", reps: "4x12", gif: "" },
-          { name: "Rosca corda polia", reps: "4x12", gif: "" },
-          { name: "Rosca Scott", reps: "4x10", gif: "" },
-          { name: "Face pull", reps: "4x12", gif: "" },
-          { name: "Abdominal infra", reps: "4x10", gif: "" },
+          { name: "Puxador frente",               reps: "4x12",            gif: demoUrl("Puxada frente barra aberta polia") },
+          { name: "Remada baixa aberta",          reps: "4x10",            gif: demoUrl("Remada baixa aberta polia") },
+          { name: "Remada curvada cavalinho",     reps: "4x12",            gif: demoUrl("Remada cavalinho máquina") },
+          { name: "Rosca corda polia",            reps: "4x12",            gif: demoUrl("Rosca bíceps corda polia") },
+          { name: "Rosca Scott",                  reps: "4x10",            gif: demoUrl("Rosca Scott barra") },
+          { name: "Face pull",                    reps: "4x12",            gif: demoUrl("Face pull polia alta") },
+          { name: "Abdominal infra",              reps: "4x10",            gif: demoUrl("Abdominal infra no banco") },
         ],
       },
       C: {
         nome: "Treino C (Posterior / Glúteo)",
         exercises: [
-          { name: "Agachamento sumô com halteres", reps: "4x12", gif: "" },
-          { name: "Mesa flexora", reps: "4x10", gif: "" },
-          { name: "Cadeira flexora", reps: "4x12", gif: "" },
-          { name: "Cadeira abdutora", reps: "4x15", gif: "" },
-          { name: "Elevação pélvica", reps: "4x10", gif: "" },
-          { name: "Panturrilha no smith", reps: "4x15", gif: "" },
-          { name: "Abdominal oblíquo", reps: "4x20 totais", gif: "" },
+          { name: "Agachamento sumô com halteres", reps: "4x12",           gif: demoUrl("Agachamento sumô com halteres") },
+          { name: "Mesa flexora",                 reps: "4x10",            gif: demoUrl("Mesa flexora") },
+          { name: "Cadeira flexora",              reps: "4x12",            gif: demoUrl("Cadeira flexora") },
+          { name: "Cadeira abdutora",             reps: "4x15",            gif: demoUrl("Cadeira abdutora") },
+          { name: "Elevação pélvica",             reps: "4x10",            gif: demoUrl("Elevação pélvica com barra") },
+          { name: "Panturrilha no smith",         reps: "4x15",            gif: demoUrl("Panturrilha em pé no smith") },
+          { name: "Abdominal oblíquo",            reps: "4x20 totais",     gif: demoUrl("Abdominal oblíquo solo") },
         ],
       },
       D: {
         nome: "Treino D (Peito / Ombro / Tríceps)",
         exercises: [
-          { name: "Supino reto máquina", reps: "4x12", gif: "" },
-          { name: "Supino inclinado máquina", reps: "3x12", gif: "" },
-          { name: "Fly", reps: "4x12", gif: "" },
-          { name: "Tríceps corda", reps: "4x12", gif: "" },
-          { name: "Tríceps máquina", reps: "3x15", gif: "" },
-          { name: "Elevação lateral com halteres", reps: "4x12", gif: "" },
-          { name: "Hiperextensão lombar", reps: "4x10", gif: "" },
+          { name: "Supino reto máquina",          reps: "4x12",            gif: demoUrl("Supino reto na máquina") },
+          { name: "Supino inclinado máquina",     reps: "3x12",            gif: demoUrl("Supino inclinado na máquina") },
+          { name: "Fly",                          reps: "4x12",            gif: demoUrl("Fly peck deck máquina") },
+          { name: "Tríceps corda",                reps: "4x12",            gif: demoUrl("Tríceps corda polia alta") },
+          { name: "Tríceps máquina",              reps: "3x15",            gif: demoUrl("Tríceps na máquina") },
+          { name: "Elevação lateral com halteres",reps: "4x12",            gif: demoUrl("Elevação lateral com halteres") },
+          { name: "Hiperextensão lombar",         reps: "4x10",            gif: demoUrl("Hiperextensão lombar no banco romano") },
         ],
       },
       E: {
         nome: "Treino E (Quadríceps / Posterior / Glúteo)",
         exercises: [
-          { name: "Agachamento smith", reps: "4x10", gif: "" },
-          { name: "Leg 45º", reps: "4x10", gif: "" },
-          { name: "Cadeira extensora", reps: "4x12", gif: "" },
-          { name: "Mesa flexora", reps: "4x10", gif: "" },
-          { name: "Abdutora", reps: "3x15", gif: "" },
-          { name: "Elevação pélvica", reps: "4x12", gif: "" },
-          { name: "Panturrilha na máquina", reps: "4x15", gif: "" },
+          { name: "Agachamento smith",            reps: "4x10",            gif: demoUrl("Agachamento no smith") },
+          { name: "Leg 45º",                      reps: "4x10",            gif: demoUrl("Leg 45") },
+          { name: "Cadeira extensora",            reps: "4x12",            gif: demoUrl("Cadeira extensora") },
+          { name: "Mesa flexora",                 reps: "4x10",            gif: demoUrl("Mesa flexora") },
+          { name: "Abdutora",                     reps: "3x15",            gif: demoUrl("Cadeira abdutora") },
+          { name: "Elevação pélvica",             reps: "4x12",            gif: demoUrl("Elevação pélvica com barra") },
+          { name: "Panturrilha na máquina",       reps: "4x15",            gif: demoUrl("Panturrilha em pé na máquina") },
         ],
       },
     };
+
+    // ---------- Lista suspensa de exercícios prontos ----------
+    const EXERCISE_TEMPLATES = [
+      // Perna / Glúteo
+      { id: "agach-livre",   grupo: "Perna / Glúteo", name: "Agachamento livre",           reps: "4x8-12",           url: demoUrl("Agachamento livre barra alta") },
+      { id: "agach-smith",   grupo: "Perna / Glúteo", name: "Agachamento no smith",        reps: "4x10-12",          url: demoUrl("Agachamento no smith") },
+      { id: "bulgaro",       grupo: "Perna / Glúteo", name: "Agachamento búlgaro",         reps: "3x10 cada perna",  url: demoUrl("Agachamento búlgaro com banco") },
+      { id: "avanço",        grupo: "Perna / Glúteo", name: "Avanço com halteres",         reps: "3x10 cada perna",  url: demoUrl("Avanço com halteres") },
+      { id: "leg45",         grupo: "Perna / Glúteo", name: "Leg 45º",                     reps: "4x10",             url: demoUrl("Leg press 45") },
+      { id: "extensora",     grupo: "Perna / Glúteo", name: "Cadeira extensora",           reps: "3-4x12",           url: demoUrl("Cadeira extensora") },
+      { id: "flex-mesa",     grupo: "Perna / Glúteo", name: "Mesa flexora",                reps: "3-4x10-12",        url: demoUrl("Mesa flexora deitado") },
+      { id: "flex-cadeira",  grupo: "Perna / Glúteo", name: "Cadeira flexora",             reps: "3-4x12",           url: demoUrl("Cadeira flexora sentado") },
+      { id: "abdutora",      grupo: "Perna / Glúteo", name: "Cadeira abdutora",            reps: "3x15",             url: demoUrl("Cadeira abdutora") },
+      { id: "adutora",       grupo: "Perna / Glúteo", name: "Adutora máquina",             reps: "3x15",             url: demoUrl("Cadeira adutora") },
+      { id: "elev-pelvica",  grupo: "Perna / Glúteo", name: "Elevação pélvica",            reps: "4x10-12",          url: demoUrl("Hip thrust elevação pélvica") },
+      { id: "pant-maq",      grupo: "Perna / Glúteo", name: "Panturrilha na máquina",      reps: "4x15-20",          url: demoUrl("Panturrilha em pé máquina") },
+      { id: "pant-smith",    grupo: "Perna / Glúteo", name: "Panturrilha no smith",        reps: "4x15-20",          url: demoUrl("Panturrilha em pé no smith") },
+
+      // Costas / Bíceps
+      { id: "pux-frente",    grupo: "Costas / Bíceps", name: "Puxador frente",             reps: "4x10-12",          url: demoUrl("Puxada frente barra aberta polia alta") },
+      { id: "pux-sup",       grupo: "Costas / Bíceps", name: "Puxador frente supinado",    reps: "4x10-12",          url: demoUrl("Puxada frente pegada supinada") },
+      { id: "rem-curv-bar",  grupo: "Costas / Bíceps", name: "Remada curvada barra",       reps: "4x8-10",           url: demoUrl("Remada curvada barra") },
+      { id: "rem-caval",     grupo: "Costas / Bíceps", name: "Remada cavalinho",           reps: "4x10-12",          url: demoUrl("Remada cavalinho máquina") },
+      { id: "rem-baixa",     grupo: "Costas / Bíceps", name: "Remada baixa",               reps: "4x10-12",          url: demoUrl("Remada baixa polia") },
+      { id: "rosca-direta",  grupo: "Costas / Bíceps", name: "Rosca direta barra",         reps: "3-4x8-12",         url: demoUrl("Rosca direta barra w") },
+      { id: "rosca-alt",     grupo: "Costas / Bíceps", name: "Rosca alternada",            reps: "3x10-12",          url: demoUrl("Rosca alternada halteres") },
+      { id: "rosca-martelo", grupo: "Costas / Bíceps", name: "Rosca martelo",              reps: "3x10-12",          url: demoUrl("Rosca martelo halteres") },
+
+      // Peito / Ombro / Tríceps
+      { id: "sup-reto-bar",  grupo: "Peito / Ombro / Tríceps", name: "Supino reto barra",  reps: "4x8-10",           url: demoUrl("Supino reto barra") },
+      { id: "sup-reto-maq",  grupo: "Peito / Ombro / Tríceps", name: "Supino reto máquina",reps: "4x10-12",          url: demoUrl("Supino reto na máquina") },
+      { id: "sup-incl-hal",  grupo: "Peito / Ombro / Tríceps", name: "Supino inclinado halteres", reps: "3-4x8-12", url: demoUrl("Supino inclinado halteres") },
+      { id: "fly-maq",       grupo: "Peito / Ombro / Tríceps", name: "Fly máquina (peck deck)", reps: "3-4x10-12",   url: demoUrl("Fly peck deck") },
+      { id: "desenv-hal",    grupo: "Peito / Ombro / Tríceps", name: "Desenvolvimento com halteres", reps: "3-4x8-12", url: demoUrl("Desenvolvimento ombro halteres sentado") },
+      { id: "ele-lateral",   grupo: "Peito / Ombro / Tríceps", name: "Elevação lateral",   reps: "3-4x12-15",        url: demoUrl("Elevação lateral ombro halteres") },
+      { id: "tric-corda",    grupo: "Peito / Ombro / Tríceps", name: "Tríceps corda polia alta", reps: "3-4x10-12",  url: demoUrl("Tríceps corda polia alta") },
+      { id: "tric-testa",    grupo: "Peito / Ombro / Tríceps", name: "Tríceps testa",      reps: "3x10-12",          url: demoUrl("Tríceps testa barra w") },
+      { id: "merg-banco",    grupo: "Peito / Ombro / Tríceps", name: "Mergulho no banco",  reps: "3x10-15",          url: demoUrl("Mergulho banco tríceps") },
+
+      // Core / Abdômen
+      { id: "abd-supra",     grupo: "Core / Abdômen", name: "Abdominal supra",             reps: "3-4x15-20",        url: demoUrl("Abdominal supra no solo") },
+      { id: "abd-infra",     grupo: "Core / Abdômen", name: "Abdominal infra",             reps: "3-4x15-20",        url: demoUrl("Abdominal infra no banco") },
+      { id: "abd-obliquo",   grupo: "Core / Abdômen", name: "Abdominal oblíquo",           reps: "3-4x20 totais",    url: demoUrl("Abdominal oblíquo solo") },
+      { id: "prancha",       grupo: "Core / Abdômen", name: "Prancha isométrica",          reps: "3x30-40s",         url: demoUrl("Prancha isométrica abdômen") },
+      { id: "prancha-lat",   grupo: "Core / Abdômen", name: "Prancha lateral",             reps: "3x20-30s cada lado", url: demoUrl("Prancha lateral isométrica") },
+    ];
 
     // ---------- Storage ----------
     const LOGS_KEY = "gymlog-registros-v1";
@@ -291,12 +384,26 @@
     function renderWorkoutButtons() {
       const container = document.getElementById("workout-buttons");
       container.innerHTML = "";
-      ["A","B","C","D","E"].forEach(letter => {
+
+      const keys = Object.keys(workouts).sort();
+      if (!keys.length) {
+        container.innerHTML = "<p class='text-xs text-slate-500'>Nenhum treino cadastrado. Crie um na aba Configurar treinos.</p>";
+        selectedWorkout = null;
+        document.getElementById("save-today-btn").classList.add("hidden");
+        document.getElementById("exercise-list").innerHTML =
+          "<p class='text-xs text-slate-500'>Sem treinos. Vá em Configurar treinos.</p>";
+        return;
+      }
+
+      keys.forEach(letter => {
         const btn = document.createElement("button");
         btn.textContent = letter;
         btn.className =
           "px-3 py-1 rounded-full border text-sm " +
           "hover:bg-blue-50 hover:border-blue-500";
+        if (letter === selectedWorkout) {
+          btn.classList.add("bg-blue-600","text-white","border-blue-600");
+        }
         btn.onclick = () => selectWorkout(letter);
         container.appendChild(btn);
       });
@@ -316,7 +423,7 @@
 
     function openGif(name, url) {
       if (!url) {
-        alert("Nenhum GIF cadastrado para: " + name);
+        alert("Nenhum vídeo cadastrado para: " + name);
         return;
       }
       window.open(url, "_blank");
@@ -579,7 +686,12 @@
     function renderConfigButtons() {
       const container = document.getElementById("config-buttons");
       container.innerHTML = "";
-      ["A","B","C","D","E"].forEach(letter => {
+      const keys = Object.keys(workouts).sort();
+      if (!keys.length) {
+        container.innerHTML = "<p class='text-xs text-slate-500'>Nenhum treino. Adicione um acima.</p>";
+        return;
+      }
+      keys.forEach(letter => {
         const btn = document.createElement("button");
         btn.textContent = letter;
         btn.className =
@@ -608,9 +720,9 @@
         return;
       }
       panel.classList.remove("hidden");
-      title.textContent = `${configWorkout} – ${workouts[configWorkout].nome}`;
+      title.textContent = `${configWorkout} – ${workouts[configWorkout].nome || ""}`;
 
-      const exs = workouts[configWorkout].exercises;
+      const exs = workouts[configWorkout].exercises || [];
       if (!exs.length) {
         list.innerHTML = "<p class='text-xs text-slate-500'>Nenhum exercício neste treino.</p>";
         return;
@@ -621,7 +733,7 @@
           <div class="text-xs">
             <p class="font-medium">${ex.name}</p>
             <p class="text-slate-500">Reps: ${ex.reps}</p>
-            ${ex.gif ? `<p class="text-emerald-600">GIF cadastrado</p>` : "<p class='text-slate-400'>Sem GIF</p>"}
+            ${ex.gif ? `<p class="text-emerald-600">Vídeo cadastrado</p>` : "<p class='text-slate-400'>Sem vídeo</p>"}
           </div>
           <div class="flex gap-2">
             <button class="text-xs text-blue-600" onclick="startEditExercise(${idx})">
@@ -639,6 +751,7 @@
       document.getElementById("cfg-name").value = "";
       document.getElementById("cfg-reps").value = "";
       document.getElementById("cfg-gif").value = "";
+      document.getElementById("cfg-template").value = "";
       editExerciseIndex = null;
       document.getElementById("cfg-form-title").textContent = "Adicionar exercício";
       document.getElementById("cfg-add-btn").textContent = "Adicionar exercício";
@@ -651,6 +764,7 @@
       document.getElementById("cfg-name").value = ex.name;
       document.getElementById("cfg-reps").value = ex.reps;
       document.getElementById("cfg-gif").value = ex.gif || "";
+      document.getElementById("cfg-template").value = "";
       editExerciseIndex = index;
 
       document.getElementById("cfg-form-title").textContent = "Editar exercício";
@@ -675,6 +789,10 @@
       if (!name || !reps) {
         alert("Nome e séries/reps são obrigatórios.");
         return;
+      }
+
+      if (!workouts[configWorkout].exercises) {
+        workouts[configWorkout].exercises = [];
       }
 
       if (editExerciseIndex !== null) {
@@ -703,8 +821,12 @@
 
     function resetCurrentWorkoutToDefault() {
       if (!configWorkout) return;
-      if (!confirm(`Resetar o Treino ${configWorkout} para o padrão inicial?`)) return;
       const defaults = cloneDefaultWorkouts();
+      if (!defaults[configWorkout]) {
+        alert("Não há padrão salvo para este treino (apenas A–E).");
+        return;
+      }
+      if (!confirm(`Resetar o Treino ${configWorkout} para o padrão inicial?`)) return;
       workouts[configWorkout] = defaults[configWorkout];
       saveWorkouts();
       resetConfigFormUI();
@@ -715,21 +837,96 @@
     }
 
     function resetAllWorkouts() {
-      if (!confirm("Resetar TODOS os treinos para o padrão inicial?")) return;
+      if (!confirm("Resetar TODOS os treinos para o padrão inicial (A–E) e apagar treinos extras?")) return;
       workouts = cloneDefaultWorkouts();
       saveWorkouts();
+      selectedWorkout = null;
+      configWorkout = null;
+      editExerciseIndex = null;
       resetConfigFormUI();
       renderConfigButtons();
       renderConfigPanel();
       renderWorkoutButtons();
-      if (selectedWorkout) renderExerciseList();
+      renderExerciseList();
       fillExerciseSelect();
+    }
+
+    function addWorkoutConfig() {
+      const letterEl = document.getElementById("cfg-new-workout-letter");
+      const nameEl = document.getElementById("cfg-new-workout-name");
+      let letter = (letterEl.value || "").toUpperCase().trim();
+      if (!letter) {
+        alert("Informe uma letra para o treino (A, B, C...).");
+        return;
+      }
+      if (!/^[A-Z]$/.test(letter)) {
+        alert("Use apenas uma letra (A–Z) para o nome do treino.");
+        return;
+      }
+      if (workouts[letter]) {
+        alert("Esse treino já existe.");
+        return;
+      }
+      const nome = nameEl.value.trim() || `Treino ${letter}`;
+      workouts[letter] = { nome, exercises: [] };
+      saveWorkouts();
+      letterEl.value = "";
+      nameEl.value = "";
+      configWorkout = letter;
+      editExerciseIndex = null;
+      resetConfigFormUI();
+      renderConfigButtons();
+      renderConfigPanel();
+      renderWorkoutButtons();
+    }
+
+    function deleteCurrentWorkout() {
+      if (!configWorkout) return;
+      const letter = configWorkout;
+      if (!confirm(`Excluir definitivamente o Treino ${letter}? (Os registros antigos dele continuam no histórico)`)) return;
+      delete workouts[letter];
+      saveWorkouts();
+      if (selectedWorkout === letter) {
+        selectedWorkout = null;
+        renderExerciseList();
+      }
+      configWorkout = null;
+      editExerciseIndex = null;
+      resetConfigFormUI();
+      renderConfigButtons();
+      renderConfigPanel();
+      renderWorkoutButtons();
+      fillExerciseSelect();
+    }
+
+    // ---------- Templates select ----------
+    function fillExerciseTemplatesSelect() {
+      const sel = document.getElementById("cfg-template");
+      if (!sel) return;
+      sel.innerHTML = '<option value="">-- escolher da lista --</option>';
+
+      EXERCISE_TEMPLATES.forEach(tpl => {
+        const opt = document.createElement("option");
+        opt.value = tpl.id;
+        opt.textContent = `${tpl.grupo} – ${tpl.name} (${tpl.reps})`;
+        sel.appendChild(opt);
+      });
+
+      sel.onchange = () => {
+        const id = sel.value;
+        const tpl = EXERCISE_TEMPLATES.find(t => t.id === id);
+        if (!tpl) return;
+        document.getElementById("cfg-name").value = tpl.name;
+        document.getElementById("cfg-reps").value = tpl.reps;
+        document.getElementById("cfg-gif").value = tpl.url;
+      };
     }
 
     // ---------- Init ----------
     (function init() {
       document.getElementById("today-date").textContent = formatBR(todayISO());
       renderWorkoutButtons();
+      fillExerciseTemplatesSelect();
       switchView("today");
     })();
   </script>
