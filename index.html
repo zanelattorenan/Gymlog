@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GymLog Simples</title>
+  <title>GymLog Simples v1.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 min-h-screen flex justify-center">
   <div class="w-full max-w-3xl bg-white shadow-lg rounded-xl m-3 p-4 space-y-4">
     <h1 class="text-2xl font-bold text-slate-800 text-center">
-      GymLog – Treinos A / B / C / D / E
+      GymLog <span class="text-xs text-slate-400">(v1.1)</span>
     </h1>
 
     <!-- Tabs -->
@@ -226,7 +226,6 @@
     }
 
     function cloneDefaultWorkouts() {
-      // structuredClone pode não existir em navegadores muito antigos
       if (typeof structuredClone === "function") {
         return structuredClone(DEFAULT_WORKOUTS);
       }
@@ -250,9 +249,9 @@
     let workouts = loadWorkouts();
     let selectedWorkout = null;
     let currentMonth = new Date();
-    let configWorkout = null;     // treino selecionado na aba config
-    let editExerciseIndex = null; // índice do exercício em edição na aba config
-    let lastDayDetailsDate = null; // data do painel aberto no calendário
+    let configWorkout = null;
+    let editExerciseIndex = null;
+    let lastDayDetailsDate = null;
 
     // ---------- Util ----------
     function todayISO() {
@@ -679,10 +678,8 @@
       }
 
       if (editExerciseIndex !== null) {
-        // edição
         workouts[configWorkout].exercises[editExerciseIndex] = { name, reps, gif };
       } else {
-        // inclusão
         workouts[configWorkout].exercises.push({ name, reps, gif });
       }
 
@@ -707,7 +704,8 @@
     function resetCurrentWorkoutToDefault() {
       if (!configWorkout) return;
       if (!confirm(`Resetar o Treino ${configWorkout} para o padrão inicial?`)) return;
-      workouts[configWorkout] = cloneDefaultWorkouts()[configWorkout];
+      const defaults = cloneDefaultWorkouts();
+      workouts[configWorkout] = defaults[configWorkout];
       saveWorkouts();
       resetConfigFormUI();
       renderConfigPanel();
