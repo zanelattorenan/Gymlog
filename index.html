@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GymLog - Registro de Treinos</title>
+    <!-- Carrega Tailwind CSS para estilização responsiva e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuração de fontes e cores do Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4f46e5',
+                        'secondary': '#8b5cf6',
+                        'accent': '#10b981',
+                        'dark-bg': '#0f172a',
+                        'light-text': '#f1f5f9',
+                    }
+                },
+                fontFamily: {
+                    sans: ['Inter', 'sans-serif'],
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Estilo para garantir que o input de número não tenha setas */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        /* Estilo para o botão de tabulação ativo */
+        .tab-active {
+            border-bottom: 3px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 700;
+        }
+        /* Estilização para o calendário */
+        .calendar-day {
+            /* Adaptado para mobile (p-1) e desktop (p-2) */
+            @apply flex flex-col items-center justify-center p-1 md:p-2 rounded-lg cursor-pointer transition-colors duration-200 h-16 md:h-20 text-xs md:text-sm;
+        }
+        .calendar-day:hover {
+            @apply bg-gray-100;
+        }
+        /* Estilo do modal */
+        .modal {
+            @apply fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4;
+        }
+        .modal-content {
+            @apply bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto;
+        }
+        /* Estilo para o botão de treino ativo na seção de hoje */
+        .treino-btn.active {
+            @apply bg-primary text-white shadow-lg border-primary border-2;
+        }
+        /* Estilo para o botão de treino inativo na seção de hoje */
+        .treino-btn:not(.active) {
+            @apply bg-gray-200 text-gray-800 hover:bg-indigo-100;
+        }
+        
+    </style>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col antialiased">
+
+    <!-- Container Principal do App, responsivo e centralizado -->
+    <div id="app-container" class="max-w-5xl w-full mx-auto p-4 md:p-8 bg-white shadow-xl rounded-xl mt-4 mb-4">
+        
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-5a2 2 0 012-2v-3a2 2 0 01-2-2h-3a2 2 0 01-2-2V4a2 2 0 00-2-2H7a2 2 0 00-2 2v5a2 2 0 01-2 2H2a2 2 0 01-2 2v3a2 2 0 012 2h5a2 2 0 012 2v5a2 2 0 002 2h5a2 2 2 0 002-2v-5z" />
+            </svg>
+            GymLog: Monitor de Treinos
+        </h1>
+
+        <!-- Alerta de Status/Auth (para mensagens de erro ou sucesso) -->
+        <div id="status-message" class="bg-indigo-100 border border-indigo-300 text-indigo-700 p-3 rounded-lg text-sm mb-6 hidden" role="alert">
+            Carregando o app...
+        </div>
+
+        <!-- Navegação (Tabs) -->
+        <nav class="flex border-b border-gray-200 mb-6 overflow-x-auto whitespace-nowrap">
+            <button id="tab-today" class="py-3 px-4 text-gray-600 hover:text-primary transition-colors duration-150 tab-active flex-shrink-0" onclick="switchView('today')">
+                Treino de Hoje
+            </button>
+            <button id="tab-calendar" class="py-3 px-4 text-gray-600 hover:text-primary transition-colors duration-150 flex-shrink-0" onclick="switchView('calendar')">
+                Calendário e Histórico
+            </button>
+            <button id="tab-exercise-history" class="py-3 px-4 text-gray-600 hover:text-primary transition-colors duration-150 flex-shrink-0" onclick="switchView('exercise-history')">
+                Histórico por Exercício
+            </button>
+            <button id="tab-config" class="py-3 px-4 text-gray-600 hover:text-primary transition-colors duration-150 flex-shrink-0" onclick="switchView('config')">
+                Configuração de Treinos
+            </button>
+        </nav>
+
+        <!-- Seção: Treino de Hoje -->
+        <div id="view-today" class="view-section">
+            <div class="mb-6">
+                <!-- Data inserida via JS -->
+                <label for="workout-selector" class="block text-lg font-medium text-gray-700 mb-2">
+                    Escolha o Treino do Dia (<span id="today-date-display">...</span>)
+                </label>
+                <!-- Botões responsivos de seleção de treino (preenchido por JS/Firebase) -->
+                <div id="treino-selector-buttons" class="flex flex-wrap gap-3">
+                    <p class="text-gray-500 italic">Carregando treinos...</p>
+                </div>
+            </div>
+
+            <!-- Lista de Exercícios (preenchida por JS) -->
+            <div id="exercise-list-container" class="mt-8">
+                <p class="text-gray-500 italic">Selecione um treino para começar o registro.</p>
+            </div>
+
+            <!-- Botão Salvar -->
+            <button id="save-workout-btn" class="mt-8 w-full bg-accent text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-green-600 transition-colors duration-200 hidden disabled:opacity-50" onclick="saveWorkout()">
+                Salvar Treino de Hoje
+            </button>
+        </div>
+
+        <!-- Seção: Calendário e Histórico -->
+        <div id="view-calendar" class="view-section hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Histórico Mensal</h2>
+            <!-- Controles do Mês -->
+            <div class="flex justify-between items-center mb-4">
+                <button class="text-primary hover:text-indigo-700" onclick="changeMonth(-1)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <span id="current-month-year" class="text-xl font-bold text-gray-800"></span>
+                <button class="text-primary hover:text-indigo-700" onclick="changeMonth(1)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                </button>
+            </div>
+            <!-- Nomes dos Dias da Semana -->
+            <div class="grid grid-cols-7 gap-1 text-center text-sm font-medium text-gray-500 mb-4">
+                <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+            </div>
+            <!-- Grid do Calendário -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                <!-- Dias do calendário serão inseridos aqui via JS -->
+            </div>
+            <!-- Detalhes do Dia Selecionado -->
+            <div id="day-details-container" class="mt-8 p-4 bg-indigo-50 border-l-4 border-primary rounded-r-lg shadow-md hidden">
+                <h3 id="day-details-title" class="text-xl font-semibold text-gray-700 mb-3">Detalhes do Treino em:</h3>
+                <div id="day-details-list" class="space-y-2">
+                    <!-- Registros do dia serão inseridos aqui via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção: Histórico por Exercício -->
+        <div id="view-exercise-history" class="view-section hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Histórico de Cargas por Exercício</h2>
+            <label for="exercise-history-selector" class="block text-lg font-medium text-gray-700 mb-2">
+                Selecione um Exercício:
+            </label>
+            <!-- Dropdown para seleção de exercício -->
+            <select id="exercise-history-selector" class="mb-6 p-3 border border-gray-300 rounded-lg w-full focus:ring-primary focus:border-primary transition duration-150" onchange="loadExerciseHistory(this.value)">
+                <option value="">-- Selecione --</option>
+                <!-- Opções serão preenchidas via JS -->
+            </select>
+            <!-- Lista de Histórico de Cargas (preenchida por JS) -->
+            <div id="exercise-history-list" class="space-y-3">
+                <p class="text-gray-500 italic">Selecione um exercício acima para ver o histórico de cargas.</p>
+            </div>
+        </div>
+
+        <!-- Seção: Configuração de Treinos (NOVA) -->
+        <div id="view-config" class="view-section hidden">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-6">Gerenciar Definições de Treino</h2>
+            
+            <div class="mb-4">
+                <label for="treino-selector-config" class="block text-lg font-medium text-gray-700 mb-2">
+                    Treino a Gerenciar:
+                </label>
+                <div id="treino-selector-config-buttons" class="flex flex-wrap gap-3 mb-4">
+                    <p class="text-gray-500 italic">Carregando treinos...</p>
+                </div>
+
+                <div id="new-treino-form" class="mt-4 p-4 border border-dashed border-gray-300 rounded-lg">
+                    <h4 class="font-semibold text-gray-700 mb-3">Adicionar Novo Treino</h4>
+                    <div class="flex space-x-2">
+                        <input type="text" id="new-treino-name" placeholder="Ex: F" maxlength="1" class="uppercase p-2 border border-gray-300 rounded-lg w-20 text-center font-bold" />
+                        <button onclick="addTreino()" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-indigo-600 transition disabled:opacity-50" id="add-treino-btn">
+                            Adicionar Treino
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Exercícios do Treino Selecionado para Edição -->
+            <div id="config-exercise-list" class="mt-8 p-4 bg-gray-50 rounded-lg border">
+                <h3 id="config-treino-title" class="text-xl font-bold text-gray-800 mb-4">Selecione um treino para editar...</h3>
+                
+                <!-- Formulário para Adicionar Novo Exercício -->
+                <div class="p-4 bg-white border border-dashed border-indigo-200 rounded-lg mb-6 shadow-sm hidden" id="add-exercise-form">
+                    <h4 class="font-semibold text-gray-700 mb-3">Adicionar Novo Exercício</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input type="text" id="new-exercise-name" placeholder="Nome (Ex: Supino Reto)" class="p-2 border rounded-lg" />
+                        <input type="text" id="new-exercise-details" placeholder="Séries/Reps (Ex: 4x12)" class="p-2 border rounded-lg" />
+                        <input type="text" id="new-exercise-demo-url" placeholder="URL da Demo (Opcional)" class="p-2 border rounded-lg" />
+                    </div>
+                    <button onclick="addExerciseToCurrentTreino()" class="mt-3 w-full bg-accent text-white py-2 rounded-lg hover:bg-green-600 transition">
+                        Salvar Exercício
+                    </button>
+                </div>
+
+                <!-- Lista de Exercícios para edição -->
+                <div id="exercise-config-items" class="space-y-3">
+                    <p class="text-gray-500 italic">Aqui aparecerão os exercícios do treino selecionado.</p>
+                </div>
+            </div>
+        </div>
+    
+    </div>
+
+    <!-- MODAL de Demonstração do Exercício -->
+    <div id="exercise-demo-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold text-gray-800">Demonstração</h2>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <div id="modal-body">
+                <p>Carregando demonstração...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Imports do Firebase e Lógica Principal do App -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, addDoc, onSnapshot, collection, setLogLevel, setDoc, deleteDoc, updateDoc, getDoc,
+            query, orderBy, limit, getDocs 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuração Firebase e Variáveis Globais (Disponíveis no escopo global da janela)
+        window.firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        window.appId = typeof __app_id !== 'undefined' ? __app_id : 'default-gymlog-app';
+        window.db = null;
+        window.auth = null;
+        window.userId = null;
+        
+        window.allLogs = []; // Cache para todos os registros de treino (carga/observação)
+        window.workoutDefs = {}; // Cache para as definições dos treinos (A, B, C...)
+        
+        window.currentMonth = new Date(); // Mês atual para o calendário
+        window.currentConfigTreino = null; // Treino atualmente selecionado na aba de Configuração
+
+        // Para evitar a sintaxe {{...}} no HTML, inserimos a data inicial aqui.
+        document.getElementById('today-date-display').textContent = new Date().toLocaleDateString('pt-BR');
+
+        // URL Padrão de Placeholder
+        const DEFAULT_PLACEHOLDER_URL = (text) => `https://placehold.co/400x300/4f46e5/ffffff/png?text=${encodeURIComponent(text.toUpperCase().replace(/\s/g, '+'))}`;
+
+        // Estrutura Inicial de Treinos (Usada apenas para popular o Firestore na primeira execução)
+        const INITIAL_EXERCISES_DATA = {
+            A: [
+                { nome: 'Agachamento no smith', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Agachamento Smith') },
+                { nome: 'Leg 45º', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Leg 45 Graus') },
+                { nome: 'Afundo', details: '3x10 cada perna', demoUrl: DEFAULT_PLACEHOLDER_URL('Afundo') },
+                { nome: 'Cadeira extensora', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Cadeira Extensora') },
+                { nome: 'Adutora máquina', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Adutora Máquina') },
+                { nome: 'Panturrilha na máquina', details: '4x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Panturrilha Máquina') },
+                { nome: 'Abdominal supra', details: '4x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Abdominal Supra') },
+            ],
+            B: [
+                { nome: 'Puxador frente', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Puxador Frente') },
+                { nome: 'Remada baixa aberta', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Remada Baixa') },
+                { nome: 'Remada curvada cavalinho', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Remada Cavalinho') },
+                { nome: 'Rosca corda polia', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Rosca Corda Polia') },
+                { nome: 'Rosca Scott', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Rosca Scott') },
+                { nome: 'Face pull', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Face Pull') },
+                { nome: 'Abdominal infra', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Abdominal Infra') },
+            ],
+            C: [
+                { nome: 'Agachamento sumô com halteres', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Agachamento Sumô') },
+                { nome: 'Mesa flexora', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Mesa Flexora') },
+                { nome: 'Cadeira flexora', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Cadeira Flexora') },
+                { nome: 'Cadeira abdutora', details: '4x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Cadeira Abdutora') },
+                { nome: 'Elevação pélvica', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Elevação Pélvica') },
+                { nome: 'Panturrilha no smith', details: '4x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Panturrilha Smith') },
+                { nome: 'Abdominal oblíquo', details: '4x20 totais', demoUrl: DEFAULT_PLACEHOLDER_URL('Abdominal Oblíquo') },
+            ],
+            D: [
+                { nome: 'Supino reto máquina', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Supino Reto Máquina') },
+                { nome: 'Supino inclinado máquina', details: '3x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Supino Inclinado Máquina') },
+                { nome: 'Fly', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Fly Máquina') },
+                { nome: 'Tríceps corda', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Tríceps Corda') },
+                { nome: 'Tríceps máquina', details: '3x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Tríceps Máquina') },
+                { nome: 'Elevação lateral com halteres', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Elevação Lateral') },
+                { nome: 'Hiperextensão lombar', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Hiperextensão') },
+            ],
+            E: [
+                { nome: 'Agachamento smith', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Agachamento Smith') },
+                { nome: 'Leg 45º', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Leg 45 Graus') },
+                { nome: 'Cadeira extensora', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Cadeira Extensora') },
+                { nome: 'Mesa flexora', details: '4x10', demoUrl: DEFAULT_PLACEHOLDER_URL('Mesa Flexora') },
+                { nome: 'Abdutora', details: '3x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Cadeira Abdutora') },
+                { nome: 'Elevação pélvica', details: '4x12', demoUrl: DEFAULT_PLACEHOLDER_URL('Elevação Pélvica') },
+                { nome: 'Panturrilha na máquina', details: '4x15', demoUrl: DEFAULT_PLACEHOLDER_URL('Panturrilha Máquina') },
+            ],
+        };
+
+        // Funções utilitárias para obter os caminhos das coleções (Private Data)
+        function getLogCollectionPath() {
+            return `artifacts/${appId}/users/${userId}/registros_treino`;
+        }
+        function getDefsCollectionPath() {
+            return `artifacts/${appId}/users/${userId}/treinos_defs`;
+        }
+
+        // 1. Inicialização do Firebase e Autenticação
+        async function initializeAppAndAuth() {
+            if (Object.keys(firebaseConfig).length === 0) {
+                console.error("Firebase config not available. Cannot initialize Firestore.");
+                showSimpleMessage("Erro: Configuração do Firebase ausente.", 'bg-red-100 border-red-300 text-red-700');
+                return;
+            }
+
+            try {
+                //setLogLevel('debug');
+                const app = initializeApp(firebaseConfig);
+                window.db = getFirestore(app);
+                window.auth = getAuth(app);
+                
+                showSimpleMessage("Autenticando e carregando dados...", 'bg-indigo-100 border-indigo-300 text-indigo-700');
+
+                const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        window.userId = user.uid;
+                        console.log("Usuário autenticado:", window.userId);
+
+                        document.getElementById('status-message').classList.add('hidden');
+                        
+                        // Exibe o userId na UI (MANDATORY)
+                        if (!document.querySelector('.user-id-display')) {
+                            document.getElementById('app-container').insertAdjacentHTML('afterbegin', `<p class="user-id-display text-xs text-right text-gray-400 mb-2">ID do Usuário: ${window.userId}</p>`);
+                        }
+                        
+                        // Configura listeners para logs E definições de treino
+                        setupRealtimeListeners();
+                        renderTreinoSelectorButtons('today'); // Renderiza botões na aba de hoje
+                        renderTreinoSelectorButtons('config'); // Renderiza botões na aba de config
+
+                    } else {
+                        console.error("Falha na autenticação do usuário.");
+                        showSimpleMessage("Erro: Não foi possível autenticar o usuário.", 'bg-red-100 border-red-300 text-red-700');
+                    }
+                });
+            } catch (error) {
+                console.error("Erro ao inicializar ou autenticar Firebase:", error);
+                showSimpleMessage(`Erro grave: ${error.message}`, 'bg-red-100 border-red-300 text-red-700');
+            }
+        }
+
+        // 2. Listeners de Dados em Tempo Real (onSnapshot)
+        function setupRealtimeListeners() {
+            if (!db || !userId) return;
+
+            // Listener 1: Logs de Treino (Carga/Obs)
+            const logsCollectionRef = collection(db, getLogCollectionPath());
+            onSnapshot(logsCollectionRef, (snapshot) => {
+                window.allLogs = [];
+                snapshot.forEach((doc) => {
+                    window.allLogs.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("Dados de logs atualizados:", window.allLogs.length, "registros.");
+                refreshActiveView();
+            }, (error) => {
+                console.error("Erro ao receber updates de logs:", error);
+            });
+
+            // Listener 2: Definições de Treino (A, B, C...)
+            const defsCollectionRef = collection(db, getDefsCollectionPath());
+            onSnapshot(defsCollectionRef, async (snapshot) => {
+                window.workoutDefs = {};
+                snapshot.forEach((doc) => {
+                    // O ID do documento é a letra do treino (A, B, C...)
+                    window.workoutDefs[doc.id] = { id: doc.id, ...doc.data() }; 
+                });
+                console.log("Definições de treinos atualizadas:", Object.keys(window.workoutDefs).length, "treinos.");
+
+                // Se não houver treinos, popula com os dados iniciais
+                if (Object.keys(window.workoutDefs).length === 0) {
+                    await populateInitialWorkoutDefs();
+                }
+
+                // Atualiza todas as UIs que dependem das definições
+                renderTreinoSelectorButtons('today');
+                renderTreinoSelectorButtons('config');
+                populateExerciseSelector();
+                refreshActiveView();
+
+            }, (error) => {
+                console.error("Erro ao receber updates de definições de treino:", error);
+            });
+        }
+        
+        // Popula as definições de treino com os dados iniciais se a coleção estiver vazia
+        async function populateInitialWorkoutDefs() {
+            if (!db || !userId) return;
+            showSimpleMessage("Primeiro acesso: Configurando treinos iniciais (A, B, C, D, E)...", 'bg-indigo-100 border-indigo-300 text-indigo-700');
+            
+            const defsCollectionRef = collection(db, getDefsCollectionPath());
+            
+            try {
+                // Para cada treino inicial (A, B, C...), salva um documento usando o nome como ID
+                for (const treinoName in INITIAL_EXERCISES_DATA) {
+                    const data = { 
+                        name: `Treino ${treinoName}`,
+                        exercises: INITIAL_EXERCISES_DATA[treinoName] 
+                    };
+                    await setDoc(doc(defsCollectionRef, treinoName), data);
+                }
+                console.log("Treinos iniciais populados com sucesso.");
+            } catch (error) {
+                console.error("Erro ao popular treinos iniciais:", error);
+                showSimpleMessage("Erro ao configurar treinos iniciais. Tente recarregar.", 'bg-red-100 border-red-300 text-red-700');
+            }
+        }
+
+        // 3. Funções de UI
+        window.switchView = (viewName) => {
+            document.querySelectorAll('.view-section').forEach(view => view.classList.add('hidden'));
+            document.querySelectorAll('button[id^="tab-"]').forEach(tab => tab.classList.remove('tab-active'));
+            
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            document.getElementById(`tab-${viewName}`).classList.add('tab-active');
+
+            // Ações específicas ao mudar de tela
+            if (viewName === 'calendar') {
+                renderCalendar();
+            } else if (viewName === 'config') {
+                // Reseta a visualização de configuração para o estado inicial
+                window.currentConfigTreino = null; 
+                renderTreinoConfig();
+            }
+        };
+
+        // Função auxiliar para re-renderizar o conteúdo da aba ativa
+        function refreshActiveView() {
+            const activeViewId = document.querySelector('.view-section:not(.hidden)')?.id;
+            const activeTreinoToday = document.querySelector('#treino-selector-buttons .treino-btn.active')?.dataset.treino;
+
+            if (activeViewId === 'view-calendar') {
+                renderCalendar();
+            } else if (activeViewId === 'view-exercise-history') {
+                const selectedExercise = document.getElementById('exercise-history-selector').value;
+                if(selectedExercise) loadExerciseHistory(selectedExercise);
+            } else if (activeViewId === 'view-today' && activeTreinoToday) {
+                renderExerciseList(activeTreinoToday);
+            } else if (activeViewId === 'view-config' && window.currentConfigTreino) {
+                 renderTreinoConfig(window.currentConfigTreino);
+            }
+        }
+        
+        // Renderiza os botões de seleção de treino (usado em 'today' e 'config')
+        function renderTreinoSelectorButtons(type) {
+            const containerId = type === 'today' ? 'treino-selector-buttons' : 'treino-selector-config-buttons';
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            const treinoKeys = Object.keys(window.workoutDefs).sort();
+
+            if (treinoKeys.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 italic">Nenhum treino definido. Por favor, adicione um na aba Configuração.</p>';
+                return;
+            }
+
+            treinoKeys.forEach(key => {
+                const isActive = (type === 'today' && document.querySelector(`#view-today .treino-btn[data-treino="${key}"]`)?.classList.contains('active')) || 
+                                 (type === 'config' && window.currentConfigTreino === key);
+                const buttonHtml = `
+                    <button 
+                        class="treino-btn font-semibold py-2 px-4 rounded-full transition-colors duration-200 ${isActive ? 'active' : ''}" 
+                        data-treino="${key}" 
+                        onclick="${type === 'today' ? `selectWorkout('${key}')` : `selectConfigTreino('${key}')`}"
+                    >
+                        Treino ${key}
+                    </button>
+                `;
+                container.insertAdjacentHTML('beforeend', buttonHtml);
+            });
+        }
+
+
+        // Treino de Hoje
+        window.selectWorkout = (treino) => {
+            // Remove o estilo de todos os botões e aplica ao selecionado
+            document.querySelectorAll('#treino-selector-buttons .treino-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const selectedBtn = document.querySelector(`#treino-selector-buttons .treino-btn[data-treino="${treino}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+            }
+            renderExerciseList(treino);
+        };
+
+        function renderExerciseList(treino) {
+            const listContainer = document.getElementById('exercise-list-container');
+            const treinoData = window.workoutDefs[treino];
+
+            if (!treinoData || !treinoData.exercises) {
+                listContainer.innerHTML = `<p class="text-gray-500 italic">Definição do Treino ${treino} não encontrada ou vazia.</p>`;
+                document.getElementById('save-workout-btn').classList.add('hidden');
+                return;
+            }
+
+            const exercises = treinoData.exercises;
+            listContainer.innerHTML = ''; // Limpa a lista
+            const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+            // Filtra logs do dia e do treino selecionado para pré-preencher (o último do dia)
+            const todayLogs = window.allLogs
+                .filter(log => log.data === today && log.treino === treino)
+                .sort((a, b) => b.timestamp - a.timestamp); // Mais recente primeiro
+
+            const listHtml = exercises.map(ex => {
+                // Tenta encontrar o registro mais recente (última vez que fez o EXERCÍCIO, em qualquer treino)
+                const lastLog = window.allLogs
+                    .filter(log => log.exercicioNome === ex.nome)
+                    .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+                // Tenta encontrar o log mais recente do EXERCÍCIO NESTE TREINO HOJE
+                const todayLog = todayLogs.find(log => log.exercicioNome === ex.nome);
+
+                // Valores Iniciais
+                const initialCarga = todayLog ? todayLog.cargaKg : '';
+                const initialObs = todayLog ? todayLog.observacao : '';
+
+                // Link para abrir o modal de demonstração
+                const demoUrl = ex.demoUrl || DEFAULT_PLACEHOLDER_URL(ex.nome);
+                const demoLink = `<button onclick="openModal('${ex.nome.replace(/'/g, "\\'")}', '${demoUrl.replace(/'/g, "\\'")}')" class="text-lg font-semibold text-gray-800 hover:text-primary transition duration-150 text-left">${ex.nome}</button>`;
+
+                return `
+                    <div class="exercise-log-item p-4 bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col space-y-3" data-exercicio-nome="${ex.nome}">
+                        <div class="flex flex-col">
+                            ${demoLink}
+                            <p class="text-sm text-gray-500">Séries x Reps Sugeridas: <span class="font-medium text-primary">${ex.details}</span></p>
+                            ${lastLog ? `<p class="text-xs text-gray-400 mt-1">Última Carga: ${lastLog.cargaKg} Kg (${lastLog.data.split('-').reverse().join('/')}, Treino ${lastLog.treino})</p>` : ''}
+                        </div>
+                        <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                            <div class="flex-1">
+                                <label for="carga-${ex.nome.replace(/\s/g, '-')}" class="block text-xs font-medium text-gray-500">Carga (Kg)</label>
+                                <input type="number" name="cargaKg" step="0.5" value="${initialCarga}" placeholder="Ex: 50" class="mt-1 p-2 border border-gray-300 rounded-lg w-full text-center focus:ring-accent focus:border-accent transition duration-150" />
+                            </div>
+                            <div class="flex-1">
+                                <label for="obs-${ex.nome.replace(/\s/g, '-')}" class="block text-xs font-medium text-gray-500">Observação (Opcional)</label>
+                                <input type="text" name="observacao" value="${initialObs}" placeholder="Ex: Cansado, +2 repetições" class="mt-1 p-2 border border-gray-300 rounded-lg w-full focus:ring-accent focus:border-accent transition duration-150" />
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            listContainer.innerHTML = `<div class="space-y-4">${listHtml}</div>`;
+            document.getElementById('save-workout-btn').classList.remove('hidden');
+        }
+
+        // Funções de Log (Salvar Treino)
+        window.saveWorkout = async () => {
+            const selectedTreino = document.querySelector('#treino-selector-buttons .treino-btn.active')?.dataset.treino;
+            if (!selectedTreino) {
+                showSimpleMessage('Por favor, selecione um treino antes de salvar.', 'bg-yellow-100 border-yellow-300 text-yellow-700');
+                return;
+            }
+
+            const exerciseInputs = document.querySelectorAll('#exercise-list-container .exercise-log-item');
+            const recordsToSave = [];
+            const today = new Date().toISOString().slice(0, 10); // Formato YYYY-MM-DD
+
+            exerciseInputs.forEach(item => {
+                const exercicioNome = item.dataset.exercicioNome;
+                const cargaKgInput = item.querySelector('input[name="cargaKg"]');
+                const observacaoInput = item.querySelector('input[name="observacao"]');
+
+                // Pega o valor do input, tratando o caso de ser string vazia
+                const cargaKg = parseFloat(cargaKgInput.value) || 0;
+                const observacao = observacaoInput.value.trim();
+
+                // Salva se houver carga > 0 ou observação relevante
+                if (cargaKg > 0 || observacao.length > 0) {
+                    recordsToSave.push({
+                        data: today,
+                        treino: selectedTreino,
+                        exercicioNome: exercicioNome,
+                        cargaKg: cargaKg,
+                        observacao: observacao,
+                        timestamp: new Date().getTime(),
+                    });
+                }
+            });
+
+            if (recordsToSave.length === 0) {
+                showSimpleMessage('Nenhum exercício com carga ou observação registrada. Adicione dados para salvar.', 'bg-red-100 border-red-300 text-red-700');
+                return;
+            }
+
+            document.getElementById('save-workout-btn').textContent = 'Salvando...';
+            document.getElementById('save-workout-btn').disabled = true;
+
+            try {
+                // Adiciona cada registro como um novo documento no Firestore
+                const batchPromises = recordsToSave.map(record => addDoc(collection(db, getLogCollectionPath()), record));
+                await Promise.all(batchPromises);
+
+                showSimpleMessage(`Treino ${selectedTreino} com ${recordsToSave.length} registros salvo com sucesso!`, 'bg-green-100 border-green-300 text-green-700');
+            } catch (error) {
+                console.error("Erro ao salvar o treino:", error);
+                showSimpleMessage('Erro ao salvar o treino. Verifique o console.', 'bg-red-100 border-red-300 text-red-700');
+            } finally {
+                document.getElementById('save-workout-btn').textContent = 'Salvar Treino de Hoje';
+                document.getElementById('save-workout-btn').disabled = false;
+            }
+        };
+
+
+        // Funções do Calendário
+        window.changeMonth = (delta) => {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            renderCalendar();
+        };
+
+        window.renderCalendar = () => {
+            if (!db || !userId) return;
+
+            const now = new Date();
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Dom, 1=Seg...
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const calendarGrid = document.getElementById('calendar-grid');
+            calendarGrid.innerHTML = '';
+
+            document.getElementById('current-month-year').textContent = currentMonth.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+
+            // Mapeia logs para o calendário: { 'YYYY-MM-DD': 'Treino_Letra' }
+            const logsByDay = {};
+            window.allLogs.forEach(log => {
+                if (log.data) {
+                    // Para logs de múltiplos exercícios no mesmo dia, pega o treino do primeiro
+                    if (!logsByDay[log.data]) {
+                        logsByDay[log.data] = log.treino;
+                    } else if (logsByDay[log.data] !== log.treino) {
+                        // Se houver logs de treinos diferentes no mesmo dia, exibe um '+'
+                        logsByDay[log.data] = 'MIX';
+                    }
+                }
+            });
+
+            // Preenche espaços vazios no início do mês
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                calendarGrid.insertAdjacentHTML('beforeend', '<div class="p-2"></div>');
+            }
+
+            // Preenche os dias do mês
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const treinoLabel = logsByDay[dateString];
+                let dayClasses = 'calendar-day border border-gray-200';
+                let content = `<span class="text-sm md:text-base font-semibold">${day}</span>`;
+                let dayClickAction = `showDayDetails('${dateString}')`;
+
+                if (treinoLabel) {
+                    // Dia com treino registrado
+                    dayClasses += ' bg-primary text-white font-bold shadow-md hover:bg-indigo-700';
+                    content = `<span class="text-xs font-light block">${day}</span><span class="text-lg md:text-xl">${treinoLabel === 'MIX' ? '+' : treinoLabel}</span>`;
+                } else if (year === now.getFullYear() && month === now.getMonth() && day === now.getDate()) {
+                    // Dia de hoje sem treino
+                    dayClasses += ' bg-gray-300 text-gray-900 border-2 border-primary';
+                } else {
+                    // Dia sem treino e não é hoje
+                    dayClasses += ' bg-white text-gray-700 hover:bg-gray-100';
+                }
+
+                calendarGrid.insertAdjacentHTML('beforeend', `
+                    <div class="${dayClasses}" onclick="${dayClickAction}">
+                        ${content}
+                    </div>
+                `);
+            }
+            // Garante que os detalhes do dia não fiquem abertos se o mês mudar
+            document.getElementById('day-details-container').classList.add('hidden');
+        };
+
+        // Função para mostrar detalhes do dia
+        window.showDayDetails = (dateString) => {
+            const detailsContainer = document.getElementById('day-details-container');
+            const detailsTitle = document.getElementById('day-details-title');
+            const detailsList = document.getElementById('day-details-list');
+            detailsList.innerHTML = '';
+
+            const dateBr = dateString.split('-').reverse().join('/');
+            detailsTitle.textContent = `Detalhes do Treino em: ${dateBr}`;
+            detailsContainer.classList.remove('hidden');
+
+            const dayLogs = window.allLogs
+                .filter(log => log.data === dateString)
+                .sort((a, b) => b.timestamp - a.timestamp); // Mais recente primeiro
+
+            if (dayLogs.length === 0) {
+                detailsList.innerHTML = '<p class="text-gray-500 italic">Nenhum treino registrado neste dia.</p>';
+                return;
+            }
+
+            // Agrupa os logs por Nome do Exercício + Treino
+            const groupedLogs = dayLogs.reduce((acc, log) => {
+                const key = `${log.exercicioNome}-${log.treino}`;
+                if (!acc[key]) {
+                    acc[key] = { exercicioNome: log.exercicioNome, treino: log.treino, registros: [] };
+                }
+                acc[key].registros.push(log);
+                return acc;
+            }, {});
+
+            Object.values(groupedLogs).forEach(group => {
+                const registrosHtml = group.registros.map(log => {
+                    const note = log.observacao ? ` (${log.observacao})` : '';
+                    return `
+                        <li class="list-disc ml-4 text-sm text-gray-600">
+                            <span class="text-primary font-bold">${log.cargaKg} Kg</span>${note}
+                            <span class="text-xs text-gray-400 ml-1">(${new Date(log.timestamp).toLocaleTimeString('pt-BR').slice(0, 5)})</span>
+                        </li>
+                    `;
+                }).join('');
+
+                detailsList.insertAdjacentHTML('beforeend', `
+                    <div class="p-3 border border-indigo-200 rounded-lg bg-white shadow-sm">
+                        <h4 class="font-semibold text-gray-800 flex justify-between items-center">
+                            <span>${group.exercicioNome}</span>
+                            <span class="text-xs font-medium bg-primary/10 text-primary px-2 py-1 rounded-full">Treino ${group.treino}</span>
+                        </h4>
+                        <ul class="mt-1 space-y-0.5">${registrosHtml}</ul>
+                    </div>
+                `);
+            });
+        };
+
+        // Funções para o Histórico por Exercício
+        function getAllUniqueExercises() {
+            // Coleta todos os nomes de exercícios de TODAS as definições de treino
+            const allExercises = new Set();
+            Object.values(window.workoutDefs).forEach(treino => {
+                if (treino.exercises) {
+                    treino.exercises.forEach(ex => allExercises.add(ex.nome));
+                }
+            });
+            return Array.from(allExercises).sort();
+        }
+
+        function populateExerciseSelector() {
+            const selector = document.getElementById('exercise-history-selector');
+            selector.innerHTML = '<option value="">-- Selecione --</option>'; // Limpa e adiciona o placeholder
+            const uniqueExercises = getAllUniqueExercises();
+            uniqueExercises.forEach(exName => {
+                selector.insertAdjacentHTML('beforeend', `<option value="${exName}">${exName}</option>`);
+            });
+        }
+
+        window.loadExerciseHistory = (selectedExercise) => {
+            const historyList = document.getElementById('exercise-history-list');
+            historyList.innerHTML = '';
+            
+            if (!selectedExercise) {
+                historyList.innerHTML = '<p class="text-gray-500 italic">Selecione um exercício acima para ver o histórico de cargas.</p>';
+                return;
+            }
+
+            const filteredLogs = window.allLogs
+                .filter(log => log.exercicioNome === selectedExercise)
+                .sort((a, b) => b.timestamp - a.timestamp); // Mais recente primeiro
+
+            if (filteredLogs.length === 0) {
+                historyList.innerHTML = `<p class="text-gray-500 italic">Nenhum registro encontrado para "${selectedExercise}".</p>`;
+                return;
+            }
+
+            const historyHtml = filteredLogs.map(log => {
+                const dateBr = log.data.split('-').reverse().join('/');
+                const note = log.observacao ? `<span class="text-sm text-gray-500 block">Obs: ${log.observacao}</span>` : '';
+                return `
+                    <div class="p-3 bg-white border-l-4 border-accent rounded-lg shadow-sm flex justify-between items-start flex-wrap">
+                        <div class="flex-1 min-w-[50%]">
+                            <span class="text-lg font-bold text-accent">${log.cargaKg} Kg</span>
+                            <span class="text-gray-600"> (Treino ${log.treino})</span>
+                            ${note}
+                        </div>
+                        <span class="text-sm text-gray-400 mt-1 md:mt-0">${dateBr}</span>
+                    </div>
+                `;
+            }).join('');
+            historyList.innerHTML = `<div class="space-y-2">${historyHtml}</div>`;
+        };
+
+        // Funções de Modal (Demonstração de Exercício)
+        window.openModal = (exerciseName, demoUrl) => {
+            const modal = document.getElementById('exercise-demo-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+            modalTitle.textContent = `Demonstração: ${exerciseName}`;
+
+            // Se for um link de placeholder, gera a imagem de placeholder com texto correto
+            let finalDemoUrl = demoUrl;
+            if (demoUrl.includes('placehold.co')) {
+                finalDemoUrl = DEFAULT_PLACEHOLDER_URL(exerciseName);
+            }
+
+            // Insere o conteúdo dinâmico com fallback de imagem
+            modalBody.innerHTML = `
+                <img src="${finalDemoUrl}" alt="Demonstração do Exercício ${exerciseName}" class="w-full h-auto rounded-lg shadow-md object-cover mb-4" onerror="this.onerror=null; this.src='${DEFAULT_PLACEHOLDER_URL('IMAGEM-NAO-ENCONTRADA - URL INVÁLIDA')}'">
+                <p class="text-sm text-gray-600">
+                    A URL da demonstração precisa ser um link direto (.gif, .jpg, .png). Links de compartilhamento (como do Google Fotos/Drive) geralmente não funcionarão.
+                    <br><br> <strong>URL fornecida:</strong> ${demoUrl}
+                </p>
+            `;
+            modal.classList.remove('hidden');
+        };
+
+        window.closeModal = () => {
+            document.getElementById('exercise-demo-modal').classList.add('hidden');
+        };
+
+        // Utilidade para mostrar mensagens simples (não-modal)
+        function showSimpleMessage(message, classes) {
+            const statusDiv = document.getElementById('status-message');
+            // Remove classes antigas
+            statusDiv.className = 'p-3 rounded-lg text-sm mb-6';
+            // Adiciona novas classes e exibe
+            statusDiv.classList.add(...classes.split(' '));
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden');
+            // Esconde após 5 segundos
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Funções de Configuração de Treinos (NOVO)
+
+        window.selectConfigTreino = (treinoName) => {
+            window.currentConfigTreino = treinoName;
+            // Remove o estilo de todos os botões e aplica ao selecionado
+            document.querySelectorAll('#treino-selector-config-buttons .treino-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const selectedBtn = document.querySelector(`#treino-selector-config-buttons .treino-btn[data-treino="${treinoName}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.add('active');
+            }
+            renderTreinoConfig(treinoName);
+        };
+
+        function renderTreinoConfig(treinoName = window.currentConfigTreino) {
+            const titleElement = document.getElementById('config-treino-title');
+            const listContainer = document.getElementById('exercise-config-items');
+            const addForm = document.getElementById('add-exercise-form');
+            
+            listContainer.innerHTML = '';
+            addForm.classList.add('hidden');
+
+            if (!treinoName || !window.workoutDefs[treinoName]) {
+                titleElement.textContent = 'Selecione um treino para editar...';
+                listContainer.innerHTML = '<p class="text-gray-500 italic">Aqui aparecerão os exercícios do treino selecionado.</p>';
+                return;
+            }
+
+            const treino = window.workoutDefs[treinoName];
+            titleElement.innerHTML = `Treino ${treinoName}: ${treino.name || ''} 
+                <button onclick="deleteTreino('${treinoName}')" class="ml-4 text-red-500 hover:text-red-700 text-sm font-normal transition">
+                    (Excluir Treino ${treinoName})
+                </button>`;
+            addForm.classList.remove('hidden');
+
+            if (treino.exercises.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-500 italic">Nenhum exercício neste treino. Adicione um acima.</p>';
+                return;
+            }
+
+            treino.exercises.forEach((ex, index) => {
+                listContainer.insertAdjacentHTML('beforeend', `
+                    <div class="exercise-config-item p-3 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-between items-center transition hover:shadow-md">
+                        <div class="flex-1 min-w-0">
+                            <p class="font-semibold text-gray-800 truncate">${ex.nome}</p>
+                            <p class="text-sm text-primary">${ex.details}</p>
+                        </div>
+                        <div class="flex space-x-2 flex-shrink-0 ml-4">
+                            <button onclick="openModal('${ex.nome.replace(/'/g, "\\'")}', '${(ex.demoUrl || DEFAULT_PLACEHOLDER_URL(ex.nome)).replace(/'/g, "\\'")}')" class="text-indigo-500 hover:text-indigo-700" title="Ver Demo">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                            </button>
+                            <button onclick="deleteExercise('${treinoName}', ${index})" class="text-red-500 hover:text-red-700" title="Excluir">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        window.addTreino = async () => {
+            const treinoNameInput = document.getElementById('new-treino-name');
+            const newTreinoName = treinoNameInput.value.toUpperCase().trim();
+
+            if (!newTreinoName || newTreinoName.length !== 1 || !/^[A-Z]$/.test(newTreinoName)) {
+                showSimpleMessage('O nome do treino deve ser uma única letra maiúscula (Ex: F).', 'bg-yellow-100 border-yellow-300 text-yellow-700');
+                return;
+            }
+            if (window.workoutDefs[newTreinoName]) {
+                showSimpleMessage(`O Treino ${newTreinoName} já existe.`, 'bg-yellow-100 border-yellow-300 text-yellow-700');
+                return;
+            }
+
+            document.getElementById('add-treino-btn').textContent = 'Adicionando...';
+            document.getElementById('add-treino-btn').disabled = true;
+
+            try {
+                const defsCollectionRef = collection(db, getDefsCollectionPath());
+                await setDoc(doc(defsCollectionRef, newTreinoName), {
+                    name: `Treino ${newTreinoName}`,
+                    exercises: [] // Começa com uma lista vazia de exercícios
+                });
+                treinoNameInput.value = '';
+                showSimpleMessage(`Treino ${newTreinoName} adicionado.`, 'bg-green-100 border-green-300 text-green-700');
+                window.selectConfigTreino(newTreinoName); // Seleciona automaticamente o novo treino
+            } catch (error) {
+                console.error("Erro ao adicionar treino:", error);
+                showSimpleMessage('Erro ao adicionar treino.', 'bg-red-100 border-red-300 text-red-700');
+            } finally {
+                document.getElementById('add-treino-btn').textContent = 'Adicionar Treino';
+                document.getElementById('add-treino-btn').disabled = false;
+            }
+        };
+
+        window.deleteTreino = async (treinoName) => {
+            // Em um app real, usaríamos um modal de confirmação. Aqui, usamos o console.
+            console.warn(`Tentativa de excluir Treino ${treinoName}.`);
+
+            if (!confirm(`Tem certeza que deseja EXCLUIR DEFINITIVAMENTE o Treino ${treinoName}? Isso não exclui os logs de treino já feitos.`)) {
+                return;
+            }
+
+            try {
+                const docRef = doc(db, getDefsCollectionPath(), treinoName);
+                await deleteDoc(docRef);
+                window.currentConfigTreino = null; // Reseta a seleção
+                showSimpleMessage(`Treino ${treinoName} excluído com sucesso.`, 'bg-green-100 border-green-300 text-green-700');
+            } catch (error) {
+                console.error("Erro ao excluir treino:", error);
+                showSimpleMessage('Erro ao excluir treino.', 'bg-red-100 border-red-300 text-red-700');
+            }
+        };
+
+        window.addExerciseToCurrentTreino = async () => {
+            const treinoName = window.currentConfigTreino;
+            if (!treinoName) {
+                showSimpleMessage('Selecione um treino para adicionar exercícios.', 'bg-yellow-100 border-yellow-300 text-yellow-700');
+                return;
+            }
+
+            const nome = document.getElementById('new-exercise-name').value.trim();
+            const details = document.getElementById('new-exercise-details').value.trim();
+            const demoUrl = document.getElementById('new-exercise-demo-url').value.trim();
+
+            if (!nome || !details) {
+                showSimpleMessage('Nome e Séries/Reps são obrigatórios.', 'bg-yellow-100 border-yellow-300 text-yellow-700');
+                return;
+            }
+
+            const newExercise = { nome, details, demoUrl };
+            const treinoData = window.workoutDefs[treinoName];
+            
+            // Adiciona o novo exercício ao array existente
+            const updatedExercises = [...treinoData.exercises, newExercise];
+
+            try {
+                const docRef = doc(db, getDefsCollectionPath(), treinoName);
+                await updateDoc(docRef, { exercises: updatedExercises });
+
+                // Limpa os campos do formulário
+                document.getElementById('new-exercise-name').value = '';
+                document.getElementById('new-exercise-details').value = '';
+                document.getElementById('new-exercise-demo-url').value = '';
+
+                showSimpleMessage(`Exercício "${nome}" adicionado ao Treino ${treinoName}.`, 'bg-green-100 border-green-300 text-green-700');
+            } catch (error) {
+                console.error("Erro ao adicionar exercício:", error);
+                showSimpleMessage('Erro ao adicionar exercício.', 'bg-red-100 border-red-300 text-red-700');
+            }
+        };
+
+        window.deleteExercise = async (treinoName, index) => {
+            // Em um app real, usaríamos um modal de confirmação. Aqui, usamos o console.
+            console.warn(`Tentativa de excluir exercício no índice ${index} do Treino ${treinoName}.`);
+
+            const treinoData = window.workoutDefs[treinoName];
+            const exerciseName = treinoData.exercises[index].nome;
+            
+            if (!confirm(`Tem certeza que deseja EXCLUIR o exercício "${exerciseName}" do Treino ${treinoName}?`)) {
+                return;
+            }
+
+            try {
+                const updatedExercises = treinoData.exercises.filter((_, i) => i !== index);
+                const docRef = doc(db, getDefsCollectionPath(), treinoName);
+                await updateDoc(docRef, { exercises: updatedExercises });
+
+                showSimpleMessage(`Exercício "${exerciseName}" excluído.`, 'bg-green-100 border-green-300 text-green-700');
+            } catch (error) {
+                console.error("Erro ao excluir exercício:", error);
+                showSimpleMessage('Erro ao excluir exercício.', 'bg-red-100 border-red-300 text-red-700');
+            }
+        };
+        
+        // Inicia o app no carregamento da janela
+        window.onload = initializeAppAndAuth;
+    </script>
+</body>
+</html>
