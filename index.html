@@ -22,7 +22,7 @@
     <div class="space-y-2">
       <label class="text-sm font-medium block" for="login-username">Usuário</label>
       <input id="login-username" type="text" class="w-full border rounded px-3 py-2 text-sm"
-             placeholder="ex: renan" />
+             placeholder="ex: João/Maria" />
     </div>
 
     <div class="space-y-2">
@@ -313,14 +313,7 @@
       }
     }
 
-    function refreshLoginUsersInfo() {
-      const users = loadUsers();
-      const el = document.getElementById("login-users-info");
-      const names = Object.keys(users);
-      if (!names.length) {
-        el.textContent = "Nenhum usuário cadastrado ainda neste navegador.";
-        return;
-      }
+  
      
 
     function handleRegister() {
@@ -360,7 +353,7 @@
       setTimeout(() => {
         enterApp(username);
       }, 500);
-      refreshLoginUsersInfo();
+      
     }
 
     function handleLogin() {
