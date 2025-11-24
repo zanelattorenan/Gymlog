@@ -19,7 +19,9 @@
       <button id="tab-calendar" class="px-4 py-2 text-slate-600"
               onclick="switchView('calendar')">Calendário</button>
       <button id="tab-history" class="px-4 py-2 text-slate-600"
-              onclick="switchView('history')">Histórico por exercício</button>
+              onclick="switchView('history')">Histórico</button>
+      <button id="tab-config" class="px-4 py-2 text-slate-600"
+              onclick="switchView('config')">Configurar treinos</button>
     </div>
 
     <!-- Treino de hoje -->
@@ -84,91 +86,149 @@
         </p>
       </div>
     </section>
+
+    <!-- Configurar treinos -->
+    <section id="view-config" class="space-y-4 hidden">
+      <p class="text-sm text-slate-600">
+        Aqui você pode adicionar/remover exercícios e cadastrar o link do GIF.
+      </p>
+
+      <div>
+        <p class="text-sm font-medium mb-1">Selecione o treino:</p>
+        <div id="config-buttons" class="flex gap-2 flex-wrap"></div>
+      </div>
+
+      <div id="config-current" class="border rounded-lg p-3 bg-slate-50 space-y-3 hidden">
+        <p id="config-title" class="font-semibold text-sm"></p>
+
+        <div class="space-y-2">
+          <p class="text-xs font-medium text-slate-600">Adicionar exercício</p>
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <input id="cfg-name" type="text" placeholder="Nome (ex: Agachamento livre)"
+                   class="flex-1 border rounded px-2 py-1 text-sm">
+            <input id="cfg-reps" type="text" placeholder="Séries/reps (ex: 4x12)"
+                   class="flex-1 border rounded px-2 py-1 text-sm">
+          </div>
+          <input id="cfg-gif" type="text" placeholder="URL do GIF (opcional)"
+                 class="w-full border rounded px-2 py-1 text-sm">
+          <button class="mt-1 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                  onclick="addExerciseConfig()">
+            Adicionar exercício
+          </button>
+        </div>
+
+        <div id="config-exercise-list" class="space-y-2 text-sm">
+          <!-- lista de exercícios do treino selecionado -->
+        </div>
+
+        <button class="mt-2 text-xs text-red-600 underline"
+                onclick="resetCurrentWorkoutToDefault()">
+          Voltar treino selecionado para o padrão inicial
+        </button>
+      </div>
+
+      <button class="text-xs text-red-500 underline"
+              onclick="resetAllWorkouts()">
+        Resetar TODOS os treinos para o padrão inicial
+      </button>
+    </section>
   </div>
 
   <script>
-
-     // ---------- Dados fixos dos treinos ----------
-    const WORKOUTS = {
+    // ---------- Dados padrão dos treinos ----------
+    const DEFAULT_WORKOUTS = {
       A: {
         nome: "Treino A (Quadríceps / Glúteo)",
         exercises: [
-          { name: "Agachamento no smith", reps: "4x12" },
-          { name: "Leg 45º", reps: "4x10" },
-          { name: "Afundo", reps: "3x10 cada perna" },
-          { name: "Cadeira extensora", reps: "4x12" },
-          { name: "Adutora máquina", reps: "4x10" },
-          { name: "Panturrilha na máquina", reps: "4x15" },
-          { name: "Abdominal supra", reps: "4x15" },
+          { name: "Agachamento no smith", reps: "4x12", gif: "" },
+          { name: "Leg 45º", reps: "4x10", gif: "" },
+          { name: "Afundo", reps: "3x10 cada perna", gif: "" },
+          { name: "Cadeira extensora", reps: "4x12", gif: "" },
+          { name: "Adutora máquina", reps: "4x10", gif: "" },
+          { name: "Panturrilha na máquina", reps: "4x15", gif: "" },
+          { name: "Abdominal supra", reps: "4x15", gif: "" },
         ],
       },
       B: {
         nome: "Treino B (Costas / Bíceps)",
         exercises: [
-          { name: "Puxador frente", reps: "4x12" },
-          { name: "Remada baixa aberta", reps: "4x10" },
-          { name: "Remada curvada cavalinho (pegada neutra)", reps: "4x12" },
-          { name: "Rosca corda polia", reps: "4x12" },
-          { name: "Rosca Scott", reps: "4x10" },
-          { name: "Face pull", reps: "4x12" },
-          { name: "Abdominal infra", reps: "4x10" },
+          { name: "Puxador frente", reps: "4x12", gif: "" },
+          { name: "Remada baixa aberta", reps: "4x10", gif: "" },
+          { name: "Remada curvada cavalinho (pegada neutra)", reps: "4x12", gif: "" },
+          { name: "Rosca corda polia", reps: "4x12", gif: "" },
+          { name: "Rosca Scott", reps: "4x10", gif: "" },
+          { name: "Face pull", reps: "4x12", gif: "" },
+          { name: "Abdominal infra", reps: "4x10", gif: "" },
         ],
       },
       C: {
         nome: "Treino C (Posterior / Glúteo)",
         exercises: [
-          { name: "Agachamento sumô com halteres", reps: "4x12" },
-          { name: "Mesa flexora", reps: "4x10" },
-          { name: "Cadeira flexora", reps: "4x12" },
-          { name: "Cadeira abdutora", reps: "4x15" },
-          { name: "Elevação pélvica", reps: "4x10" },
-          { name: "Panturrilha no smith", reps: "4x15" },
-          { name: "Abdominal oblíquo", reps: "4x20 totais" },
+          { name: "Agachamento sumô com halteres", reps: "4x12", gif: "" },
+          { name: "Mesa flexora", reps: "4x10", gif: "" },
+          { name: "Cadeira flexora", reps: "4x12", gif: "" },
+          { name: "Cadeira abdutora", reps: "4x15", gif: "" },
+          { name: "Elevação pélvica", reps: "4x10", gif: "" },
+          { name: "Panturrilha no smith", reps: "4x15", gif: "" },
+          { name: "Abdominal oblíquo", reps: "4x20 totais", gif: "" },
         ],
       },
       D: {
         nome: "Treino D (Peito / Ombro / Tríceps)",
         exercises: [
-          { name: "Supino reto máquina", reps: "4x12" },
-          { name: "Supino inclinado máquina", reps: "3x12" },
-          { name: "Fly", reps: "4x12" },
-          { name: "Tríceps corda", reps: "4x12" },
-          { name: "Tríceps máquina", reps: "3x15" },
-          { name: "Elevação lateral com halteres", reps: "4x12" },
-          { name: "Hiperextensão lombar", reps: "4x10" },
+          { name: "Supino reto máquina", reps: "4x12", gif: "" },
+          { name: "Supino inclinado máquina", reps: "3x12", gif: "" },
+          { name: "Fly", reps: "4x12", gif: "" },
+          { name: "Tríceps corda", reps: "4x12", gif: "" },
+          { name: "Tríceps máquina", reps: "3x15", gif: "" },
+          { name: "Elevação lateral com halteres", reps: "4x12", gif: "" },
+          { name: "Hiperextensão lombar", reps: "4x10", gif: "" },
         ],
       },
       E: {
         nome: "Treino E (Quadríceps / Posterior / Glúteo)",
         exercises: [
-          { name: "Agachamento smith", reps: "4x10" },
-          { name: "Leg 45º", reps: "4x10" },
-          { name: "Cadeira extensora", reps: "4x12" },
-          { name: "Mesa flexora", reps: "4x10" },
-          { name: "Abdutora", reps: "3x15" },
-          { name: "Elevação pélvica", reps: "4x12" },
-          { name: "Panturrilha na máquina", reps: "4x15" },
+          { name: "Agachamento smith", reps: "4x10", gif: "" },
+          { name: "Leg 45º", reps: "4x10", gif: "" },
+          { name: "Cadeira extensora", reps: "4x12", gif: "" },
+          { name: "Mesa flexora", reps: "4x10", gif: "" },
+          { name: "Abdutora", reps: "3x15", gif: "" },
+          { name: "Elevação pélvica", reps: "4x12", gif: "" },
+          { name: "Panturrilha na máquina", reps: "4x15", gif: "" },
         ],
       },
     };
 
     // ---------- Storage ----------
-    const STORAGE_KEY = "gymlog-registros-v1";
+    const LOGS_KEY = "gymlog-registros-v1";
+    const WORKOUTS_KEY = "gymlog-workouts-v1";
+
     function loadLogs() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-      } catch {
-        return [];
-      }
+      try { return JSON.parse(localStorage.getItem(LOGS_KEY)) || []; }
+      catch { return []; }
     }
     function saveLogs(logs) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+      localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+    }
+
+    function loadWorkouts() {
+      try {
+        const data = JSON.parse(localStorage.getItem(WORKOUTS_KEY));
+        return data || structuredClone(DEFAULT_WORKOUTS);
+      } catch {
+        return structuredClone(DEFAULT_WORKOUTS);
+      }
+    }
+    function saveWorkouts() {
+      localStorage.setItem(WORKOUTS_KEY, JSON.stringify(workouts));
     }
 
     // ---------- Estado ----------
     let logs = loadLogs();
+    let workouts = loadWorkouts();
     let selectedWorkout = null;
     let currentMonth = new Date();
+    let configWorkout = null; // treino selecionado na aba config
 
     // ---------- Util ----------
     function todayISO() {
@@ -181,18 +241,27 @@
 
     // ---------- Tabs ----------
     function switchView(view) {
-      document.getElementById("view-today").classList.add("hidden");
-      document.getElementById("view-calendar").classList.add("hidden");
-      document.getElementById("view-history").classList.add("hidden");
-      document.getElementById("tab-today").classList.remove("border-b-2","border-blue-600","text-blue-600","font-semibold");
-      document.getElementById("tab-calendar").classList.remove("border-b-2","border-blue-600","text-blue-600","font-semibold");
-      document.getElementById("tab-history").classList.remove("border-b-2","border-blue-600","text-blue-600","font-semibold");
+      ["today","calendar","history","config"].forEach(v => {
+        document.getElementById("view-" + v).classList.add("hidden");
+        document.getElementById("tab-" + v).classList.remove(
+          "border-b-2","border-blue-600","text-blue-600","font-semibold"
+        );
+      });
 
-      document.getElementById(`view-${view}`).classList.remove("hidden");
-      document.getElementById(`tab-${view}`).classList.add("border-b-2","border-blue-600","text-blue-600","font-semibold");
+      document.getElementById("view-" + view).classList.remove("hidden");
+      document.getElementById("tab-" + view).classList.add(
+        "border-b-2","border-blue-600","text-blue-600","font-semibold"
+      );
 
       if (view === "calendar") renderCalendar();
-      if (view === "history") fillExerciseSelect();
+      if (view === "history") {
+        fillExerciseSelect();
+        renderExerciseHistory();
+      }
+      if (view === "config") {
+        renderConfigButtons();
+        renderConfigPanel();
+      }
     }
 
     // ---------- Treino de hoje ----------
@@ -212,7 +281,6 @@
 
     function selectWorkout(letter) {
       selectedWorkout = letter;
-      // estilo
       document.querySelectorAll("#workout-buttons button").forEach(b => {
         b.classList.remove("bg-blue-600","text-white","border-blue-600");
       });
@@ -223,15 +291,23 @@
       renderExerciseList();
     }
 
+    function openGif(name, url) {
+      if (!url) {
+        alert("Nenhum GIF cadastrado para: " + name);
+        return;
+      }
+      window.open(url, "_blank");
+    }
+
     function renderExerciseList() {
       const container = document.getElementById("exercise-list");
       const btnSave = document.getElementById("save-today-btn");
-      if (!selectedWorkout || !WORKOUTS[selectedWorkout]) {
+      if (!selectedWorkout || !workouts[selectedWorkout]) {
         container.innerHTML = "<p class='text-slate-500 text-sm italic'>Selecione um treino.</p>";
         btnSave.classList.add("hidden");
         return;
       }
-      const workout = WORKOUTS[selectedWorkout];
+      const workout = workouts[selectedWorkout];
       const today = todayISO();
 
       const lastByExercise = {};
@@ -250,9 +326,15 @@
         const initWeight = todayLast ? todayLast.weight : "";
         const initObs = todayLast ? todayLast.note : "";
 
+        const safeName = ex.name.replace(/"/g, '&quot;');
+
         return `
-          <div class="border rounded-lg p-3 bg-slate-50 space-y-1" data-ex="${ex.name}">
-            <p class="font-medium text-sm">${ex.name}</p>
+          <div class="border rounded-lg p-3 bg-slate-50 space-y-1" data-ex="${safeName}">
+            <button type="button"
+                    class="font-medium text-sm text-blue-700 hover:underline text-left"
+                    onclick="openGif('${safeName}','${ex.gif ? ex.gif.replace(/'/g,"&#39;") : ""}')">
+              ${safeName}
+            </button>
             <p class="text-xs text-slate-500">Séries / reps: ${ex.reps}</p>
             ${lastText}
             <div class="flex gap-2 mt-1">
@@ -266,7 +348,7 @@
           </div>
         `;
       }).join("");
-      container.innerHTML = html;
+      container.innerHTML = html || "<p class='text-xs text-slate-500'>Nenhum exercício neste treino.</p>";
       btnSave.classList.remove("hidden");
     }
 
@@ -304,7 +386,7 @@
       logs = logs.concat(newLogs);
       saveLogs(logs);
       showMsg(`Treino ${selectedWorkout} salvo com ${newLogs.length} registros.`);
-      renderCalendar();   // já atualiza calendário
+      renderCalendar();
       fillExerciseSelect();
       renderExerciseHistory();
     }
@@ -326,7 +408,7 @@
       const label = document.getElementById("month-label");
       const grid = document.getElementById("calendar-grid");
       const y = currentMonth.getFullYear();
-      const m = currentMonth.getMonth(); // 0–11
+      const m = currentMonth.getMonth();
       label.textContent = currentMonth.toLocaleDateString("pt-BR", {
         month: "long",
         year: "numeric",
@@ -334,14 +416,13 @@
 
       grid.innerHTML = "";
       const first = new Date(y, m, 1);
-      const firstWeekday = first.getDay(); // 0=dom
+      const firstWeekday = first.getDay();
       const daysInMonth = new Date(y, m + 1, 0).getDate();
 
       for (let i = 0; i < firstWeekday; i++) {
         grid.innerHTML += "<div></div>";
       }
 
-      // mapa dateISO -> letra do treino
       const byDate = {};
       logs.forEach(l => {
         if (!byDate[l.date]) byDate[l.date] = new Set();
@@ -408,7 +489,7 @@
       const select = document.getElementById("exercise-select");
       const existing = select.value;
       const allNames = new Set();
-      Object.values(WORKOUTS).forEach(w => {
+      Object.values(workouts).forEach(w => {
         w.exercises.forEach(e => allNames.add(e.name));
       });
       const list = Array.from(allNames).sort();
@@ -452,6 +533,114 @@
           </div>
         </div>
       `).join("");
+    }
+
+    // ---------- Configurar treinos ----------
+    function renderConfigButtons() {
+      const container = document.getElementById("config-buttons");
+      container.innerHTML = "";
+      ["A","B","C","D","E"].forEach(letter => {
+        const btn = document.createElement("button");
+        btn.textContent = letter;
+        btn.className =
+          "px-3 py-1 rounded-full border text-sm " +
+          "hover:bg-blue-50 hover:border-blue-500";
+        if (configWorkout === letter) {
+          btn.classList.add("bg-blue-600","text-white","border-blue-600");
+        }
+        btn.onclick = () => { configWorkout = letter; renderConfigButtons(); renderConfigPanel(); };
+        container.appendChild(btn);
+      });
+    }
+
+    function renderConfigPanel() {
+      const panel = document.getElementById("config-current");
+      const title = document.getElementById("config-title");
+      const list = document.getElementById("config-exercise-list");
+      if (!configWorkout || !workouts[configWorkout]) {
+        panel.classList.add("hidden");
+        return;
+      }
+      panel.classList.remove("hidden");
+      title.textContent = `${configWorkout} – ${workouts[configWorkout].nome}`;
+
+      const exs = workouts[configWorkout].exercises;
+      if (!exs.length) {
+        list.innerHTML = "<p class='text-xs text-slate-500'>Nenhum exercício neste treino.</p>";
+        return;
+      }
+
+      list.innerHTML = exs.map((ex, idx) => `
+        <div class="border rounded px-2 py-1 bg-white flex justify-between items-center">
+          <div class="text-xs">
+            <p class="font-medium">${ex.name}</p>
+            <p class="text-slate-500">Reps: ${ex.reps}</p>
+            ${ex.gif ? `<p class="text-emerald-600">GIF cadastrado</p>` : ""}
+          </div>
+          <button class="text-xs text-red-600" onclick="removeExercise(${idx})">
+            Remover
+          </button>
+        </div>
+      `).join("");
+    }
+
+    function addExerciseConfig() {
+      if (!configWorkout) return;
+      const nameEl = document.getElementById("cfg-name");
+      const repsEl = document.getElementById("cfg-reps");
+      const gifEl = document.getElementById("cfg-gif");
+
+      const name = nameEl.value.trim();
+      const reps = repsEl.value.trim();
+      const gif = gifEl.value.trim();
+
+      if (!name || !reps) {
+        alert("Nome e séries/reps são obrigatórios.");
+        return;
+      }
+
+      workouts[configWorkout].exercises.push({ name, reps, gif });
+      saveWorkouts();
+
+      nameEl.value = "";
+      repsEl.value = "";
+      gifEl.value = "";
+
+      renderConfigPanel();
+      renderWorkoutButtons();
+      if (selectedWorkout === configWorkout) renderExerciseList();
+      fillExerciseSelect();
+    }
+
+    function removeExercise(index) {
+      if (!configWorkout) return;
+      workouts[configWorkout].exercises.splice(index, 1);
+      saveWorkouts();
+      renderConfigPanel();
+      if (selectedWorkout === configWorkout) renderExerciseList();
+      fillExerciseSelect();
+    }
+
+    function resetCurrentWorkoutToDefault() {
+      if (!configWorkout) return;
+      if (!confirm(`Resetar o Treino ${configWorkout} para o padrão inicial?`)) return;
+      workouts[configWorkout] = structuredClone(DEFAULT_WORKOUTS[configWorkout]);
+      saveWorkouts();
+      renderConfigPanel();
+      renderWorkoutButtons();
+      if (selectedWorkout === configWorkout) renderExerciseList();
+      fillExerciseSelect();
+    }
+
+    function resetAllWorkouts() {
+      if (!confirm("Resetar TODOS os treinos para o padrão inicial?")) return;
+      workouts = structuredClone(DEFAULT_WORKOUTS);
+      saveWorkouts();
+      renderConfigButtons();
+      renderConfigPanel();
+      renderWorkoutButtons();
+      if (selectedWorkout) renderExerciseList();
+      fillExerciseSelect();
     }
 
     // ---------- Init ----------
