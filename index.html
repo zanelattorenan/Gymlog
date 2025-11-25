@@ -671,17 +671,18 @@
       select.appendChild(customOpt);
     }
 
-    // Quando o usuário troca o alimento no select
-    function onMealFoodChange() {
-      const select = document.getElementById("meal-food");
-      const descInput = document.getElementById("meal-desc");
-      const kcalInput = document.getElementById("meal-kcal");
-      if (!select || !descInput || !kcalInput) return;
+  // Quando o usuário troca o alimento no select
+function onMealFoodChange() {
+  const select = document.getElementById("meal-food");
+  const descInput = document.getElementById("meal-desc");
+  const kcalInput = document.getElementById("meal-kcal");
+  if (!select || !descInput || !kcalInput) return;
 
-      const value = select.value;
+  const value = select.value;
   if (!value) return;
 
-  if (value === "other") {
+  // Opção "Outro alimento"
+  if (value === "custom") {
     descInput.readOnly = false;
     kcalInput.readOnly = false;
     descInput.value = "";
@@ -690,16 +691,17 @@
     return;
   }
 
-      // Uma opção padrão
-      const index = parseInt(value, 10);
-      const item = FOOD_ITEMS[index];
-      if (!item) return;
+  // Uma opção padrão
+  const index = parseInt(value, 10);
+  const item = FOOD_ITEMS[index];
+  if (!item) return;
 
-      descInput.readOnly = true;      // travamos a descrição para bater com o item
-      descInput.value = item.label;
-      kcalInput.readOnly = false;     // kcal pode ser ajustada se a porção for diferente
-      kcalInput.value = item.kcal;
-    }
+  descInput.readOnly = true;      // travamos a descrição para bater com o item
+  descInput.value = item.label;
+  kcalInput.readOnly = false;     // kcal pode ser ajustada se a porção for diferente
+  kcalInput.value = item.kcal;
+}
+
 
     function initNutritionDiary() {
   const dateInput = document.getElementById("meal-date");
