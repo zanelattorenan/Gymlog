@@ -646,6 +646,91 @@ const FOOD_ITEMS = [
   { label: "1 scoop whey (30 g)", kcal: 110 },
 ];
 
+// Helper para montar link de demonstração (YouTube) para templates de exercício
+const demoUrlTemplate = (nome) =>
+  "https://www.youtube.com/results?search_query=" + encodeURIComponent(nome + " exercício academia");
+
+// ---------- Lista suspensa de exercícios prontos ----------
+const EXERCISE_TEMPLATES = [
+  // Perna / Glúteo
+  { id: "agach-livre",   grupo: "Perna / Glúteo", name: "Agachamento livre",           reps: "4x8-12",           url: demoUrlTemplate("Agachamento livre barra alta") },
+  { id: "agach-smith",   grupo: "Perna / Glúteo", name: "Agachamento no smith",        reps: "4x10-12",          url: demoUrlTemplate("Agachamento no smith") },
+  { id: "bulgaro",       grupo: "Perna / Glúteo", name: "Agachamento búlgaro",         reps: "3x10 cada perna",  url: demoUrlTemplate("Agachamento búlgaro com banco") },
+  { id: "avanco",        grupo: "Perna / Glúteo", name: "Avanço com halteres",         reps: "3x10 cada perna",  url: demoUrlTemplate("Avanço com halteres") },
+  { id: "leg45",         grupo: "Perna / Glúteo", name: "Leg 45º",                     reps: "4x10",             url: demoUrlTemplate("Leg press 45") },
+  { id: "extensora",     grupo: "Perna / Glúteo", name: "Cadeira extensora",           reps: "3-4x12",           url: demoUrlTemplate("Cadeira extensora") },
+  { id: "flex-mesa",     grupo: "Perna / Glúteo", name: "Mesa flexora",                reps: "3-4x10-12",        url: demoUrlTemplate("Mesa flexora deitado") },
+  { id: "flex-cadeira",  grupo: "Perna / Glúteo", name: "Cadeira flexora",             reps: "3-4x12",           url: demoUrlTemplate("Cadeira flexora sentado") },
+  { id: "abdutora",      grupo: "Perna / Glúteo", name: "Cadeira abdutora",            reps: "3x15",             url: demoUrlTemplate("Cadeira abdutora") },
+  { id: "adutora",       grupo: "Perna / Glúteo", name: "Adutora máquina",             reps: "3x15",             url: demoUrlTemplate("Cadeira adutora") },
+  { id: "elev-pelvica",  grupo: "Perna / Glúteo", name: "Elevação pélvica",            reps: "4x10-12",          url: demoUrlTemplate("Hip thrust elevação pélvica") },
+  { id: "pant-maq",      grupo: "Perna / Glúteo", name: "Panturrilha na máquina",      reps: "4x15-20",          url: demoUrlTemplate("Panturrilha em pé máquina") },
+  { id: "pant-smith",    grupo: "Perna / Glúteo", name: "Panturrilha no smith",        reps: "4x15-20",          url: demoUrlTemplate("Panturrilha em pé no smith") },
+
+  // Costas / Bíceps
+  { id: "pux-frente",    grupo: "Costas / Bíceps", name: "Puxador frente",             reps: "4x10-12",          url: demoUrlTemplate("Puxada frente barra aberta polia alta") },
+  { id: "pux-sup",       grupo: "Costas / Bíceps", name: "Puxador frente supinado",    reps: "4x10-12",          url: demoUrlTemplate("Puxada frente pegada supinada") },
+  { id: "rem-curv-bar",  grupo: "Costas / Bíceps", name: "Remada curvada barra",       reps: "4x8-10",           url: demoUrlTemplate("Remada curvada barra") },
+  { id: "rem-caval",     grupo: "Costas / Bíceps", name: "Remada cavalinho",           reps: "4x10-12",          url: demoUrlTemplate("Remada cavalinho máquina") },
+  { id: "rem-baixa",     grupo: "Costas / Bíceps", name: "Remada baixa",               reps: "4x10-12",          url: demoUrlTemplate("Remada baixa polia") },
+  { id: "rosca-direta",  grupo: "Costas / Bíceps", name: "Rosca direta barra",         reps: "3-4x8-12",         url: demoUrlTemplate("Rosca direta barra w") },
+  { id: "rosca-alt",     grupo: "Costas / Bíceps", name: "Rosca alternada",            reps: "3x10-12",          url: demoUrlTemplate("Rosca alternada halteres") },
+  { id: "rosca-martelo", grupo: "Costas / Bíceps", name: "Rosca martelo",              reps: "3x10-12",          url: demoUrlTemplate("Rosca martelo halteres") },
+
+  // Peito / Ombro / Tríceps
+  { id: "sup-reto-bar",  grupo: "Peito / Ombro / Tríceps", name: "Supino reto barra",  reps: "4x8-10",           url: demoUrlTemplate("Supino reto barra") },
+  { id: "sup-reto-maq",  grupo: "Peito / Ombro / Tríceps", name: "Supino reto máquina",reps: "4x10-12",          url: demoUrlTemplate("Supino reto na máquina") },
+  { id: "sup-incl-hal",  grupo: "Peito / Ombro / Tríceps", name: "Supino inclinado halteres", reps: "3-4x8-12", url: demoUrlTemplate("Supino inclinado halteres") },
+  { id: "fly-maq",       grupo: "Peito / Ombro / Tríceps", name: "Fly máquina (peck deck)", reps: "3-4x10-12",   url: demoUrlTemplate("Fly peck deck") },
+  { id: "desenv-hal",    grupo: "Peito / Ombro / Tríceps", name: "Desenvolvimento com halteres", reps: "3-4x8-12", url: demoUrlTemplate("Desenvolvimento ombro halteres sentado") },
+  { id: "ele-lateral",   grupo: "Peito / Ombro / Tríceps", name: "Elevação lateral",   reps: "3-4x12-15",        url: demoUrlTemplate("Elevação lateral ombro halteres") },
+  { id: "tric-corda",    grupo: "Peito / Ombro / Tríceps", name: "Tríceps corda polia alta", reps: "3-4x10-12",  url: demoUrlTemplate("Tríceps corda polia alta") },
+  { id: "tric-testa",    grupo: "Peito / Ombro / Tríceps", name: "Tríceps testa",      reps: "3x10-12",          url: demoUrlTemplate("Tríceps testa barra w") },
+  { id: "merg-banco",    grupo: "Peito / Ombro / Tríceps", name: "Mergulho no banco",  reps: "3x10-15",          url: demoUrlTemplate("Mergulho banco tríceps") },
+
+  // Core / Abdômen
+  { id: "abd-supra",     grupo: "Core / Abdômen", name: "Abdominal supra",             reps: "3-4x15-20",        url: demoUrlTemplate("Abdominal supra no solo") },
+  { id: "abd-infra",     grupo: "Core / Abdômen", name: "Abdominal infra",             reps: "3-4x15-20",        url: demoUrlTemplate("Abdominal infra no banco") },
+  { id: "abd-obliquo",   grupo: "Core / Abdômen", name: "Abdominal oblíquo",           reps: "3-4x20 totais",    url: demoUrlTemplate("Abdominal oblíquo solo") },
+  { id: "prancha",       grupo: "Core / Abdômen", name: "Prancha isométrica",          reps: "3x30-40s",         url: demoUrlTemplate("Prancha isométrica abdômen") },
+  { id: "prancha-lat",   grupo: "Core / Abdômen", name: "Prancha lateral",             reps: "3x20-30s cada lado", url: demoUrlTemplate("Prancha lateral isométrica") },
+];
+
+// Preenche o menu suspenso com exercícios prontos na aba de configuração
+function initExerciseTemplates() {
+  const sel = document.getElementById("template-select");
+  if (!sel) return;
+
+  sel.innerHTML = `<option value="">-- selecione um exercício --</option>`;
+
+  EXERCISE_TEMPLATES.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = `${t.grupo} — ${t.name} (${t.reps})`;
+    sel.appendChild(opt);
+  });
+}
+
+// Ao selecionar um exercício pronto, preenche o formulário de configuração
+function applyExerciseTemplate() {
+  const sel = document.getElementById("template-select");
+  if (!sel) return;
+  const id = sel.value;
+  if (!id) return;
+
+  const t = EXERCISE_TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+
+  const nameInput = document.getElementById("cfg-ex-name");
+  const repsInput = document.getElementById("cfg-ex-reps");
+  const gifInput  = document.getElementById("cfg-ex-gif");
+
+  if (nameInput) nameInput.value = t.name;
+  if (repsInput) repsInput.value = t.reps;
+  if (gifInput)  gifInput.value  = t.url || "";
+}
+
+
 // Preenche o menu suspenso de alimentos
 function populateFoodOptions() {
   const select = document.getElementById("meal-food");
@@ -2196,86 +2281,3 @@ function initNutritionDiary() {
 
 </body>
 </html>
-// Helper para montar link de demonstração (YouTube) para templates de exercício
-const demoUrlTemplate = (nome) =>
-  "https://www.youtube.com/results?search_query=" + encodeURIComponent(nome + " exercício academia");
-
-// ---------- Lista suspensa de exercícios prontos ----------
-const EXERCISE_TEMPLATES = [
-  // Perna / Glúteo
-  { id: "agach-livre",   grupo: "Perna / Glúteo", name: "Agachamento livre",           reps: "4x8-12",           url: demoUrlTemplate("Agachamento livre barra alta") },
-  { id: "agach-smith",   grupo: "Perna / Glúteo", name: "Agachamento no smith",        reps: "4x10-12",          url: demoUrlTemplate("Agachamento no smith") },
-  { id: "bulgaro",       grupo: "Perna / Glúteo", name: "Agachamento búlgaro",         reps: "3x10 cada perna",  url: demoUrlTemplate("Agachamento búlgaro com banco") },
-  { id: "avanco",        grupo: "Perna / Glúteo", name: "Avanço com halteres",         reps: "3x10 cada perna",  url: demoUrlTemplate("Avanço com halteres") },
-  { id: "leg45",         grupo: "Perna / Glúteo", name: "Leg 45º",                     reps: "4x10",             url: demoUrlTemplate("Leg press 45") },
-  { id: "extensora",     grupo: "Perna / Glúteo", name: "Cadeira extensora",           reps: "3-4x12",           url: demoUrlTemplate("Cadeira extensora") },
-  { id: "flex-mesa",     grupo: "Perna / Glúteo", name: "Mesa flexora",                reps: "3-4x10-12",        url: demoUrlTemplate("Mesa flexora deitado") },
-  { id: "flex-cadeira",  grupo: "Perna / Glúteo", name: "Cadeira flexora",             reps: "3-4x12",           url: demoUrlTemplate("Cadeira flexora sentado") },
-  { id: "abdutora",      grupo: "Perna / Glúteo", name: "Cadeira abdutora",            reps: "3x15",             url: demoUrlTemplate("Cadeira abdutora") },
-  { id: "adutora",       grupo: "Perna / Glúteo", name: "Adutora máquina",             reps: "3x15",             url: demoUrlTemplate("Cadeira adutora") },
-  { id: "elev-pelvica",  grupo: "Perna / Glúteo", name: "Elevação pélvica",            reps: "4x10-12",          url: demoUrlTemplate("Hip thrust elevação pélvica") },
-  { id: "pant-maq",      grupo: "Perna / Glúteo", name: "Panturrilha na máquina",      reps: "4x15-20",          url: demoUrlTemplate("Panturrilha em pé máquina") },
-  { id: "pant-smith",    grupo: "Perna / Glúteo", name: "Panturrilha no smith",        reps: "4x15-20",          url: demoUrlTemplate("Panturrilha em pé no smith") },
-
-  // Costas / Bíceps
-  { id: "pux-frente",    grupo: "Costas / Bíceps", name: "Puxador frente",             reps: "4x10-12",          url: demoUrlTemplate("Puxada frente barra aberta polia alta") },
-  { id: "pux-sup",       grupo: "Costas / Bíceps", name: "Puxador frente supinado",    reps: "4x10-12",          url: demoUrlTemplate("Puxada frente pegada supinada") },
-  { id: "rem-curv-bar",  grupo: "Costas / Bíceps", name: "Remada curvada barra",       reps: "4x8-10",           url: demoUrlTemplate("Remada curvada barra") },
-  { id: "rem-caval",     grupo: "Costas / Bíceps", name: "Remada cavalinho",           reps: "4x10-12",          url: demoUrlTemplate("Remada cavalinho máquina") },
-  { id: "rem-baixa",     grupo: "Costas / Bíceps", name: "Remada baixa",               reps: "4x10-12",          url: demoUrlTemplate("Remada baixa polia") },
-  { id: "rosca-direta",  grupo: "Costas / Bíceps", name: "Rosca direta barra",         reps: "3-4x8-12",         url: demoUrlTemplate("Rosca direta barra w") },
-  { id: "rosca-alt",     grupo: "Costas / Bíceps", name: "Rosca alternada",            reps: "3x10-12",          url: demoUrlTemplate("Rosca alternada halteres") },
-  { id: "rosca-martelo", grupo: "Costas / Bíceps", name: "Rosca martelo",              reps: "3x10-12",          url: demoUrlTemplate("Rosca martelo halteres") },
-
-  // Peito / Ombro / Tríceps
-  { id: "sup-reto-bar",  grupo: "Peito / Ombro / Tríceps", name: "Supino reto barra",  reps: "4x8-10",           url: demoUrlTemplate("Supino reto barra") },
-  { id: "sup-reto-maq",  grupo: "Peito / Ombro / Tríceps", name: "Supino reto máquina",reps: "4x10-12",          url: demoUrlTemplate("Supino reto na máquina") },
-  { id: "sup-incl-hal",  grupo: "Peito / Ombro / Tríceps", name: "Supino inclinado halteres", reps: "3-4x8-12", url: demoUrlTemplate("Supino inclinado halteres") },
-  { id: "fly-maq",       grupo: "Peito / Ombro / Tríceps", name: "Fly máquina (peck deck)", reps: "3-4x10-12",   url: demoUrlTemplate("Fly peck deck") },
-  { id: "desenv-hal",    grupo: "Peito / Ombro / Tríceps", name: "Desenvolvimento com halteres", reps: "3-4x8-12", url: demoUrlTemplate("Desenvolvimento ombro halteres sentado") },
-  { id: "ele-lateral",   grupo: "Peito / Ombro / Tríceps", name: "Elevação lateral",   reps: "3-4x12-15",        url: demoUrlTemplate("Elevação lateral ombro halteres") },
-  { id: "tric-corda",    grupo: "Peito / Ombro / Tríceps", name: "Tríceps corda polia alta", reps: "3-4x10-12",  url: demoUrlTemplate("Tríceps corda polia alta") },
-  { id: "tric-testa",    grupo: "Peito / Ombro / Tríceps", name: "Tríceps testa",      reps: "3x10-12",          url: demoUrlTemplate("Tríceps testa barra w") },
-  { id: "merg-banco",    grupo: "Peito / Ombro / Tríceps", name: "Mergulho no banco",  reps: "3x10-15",          url: demoUrlTemplate("Mergulho banco tríceps") },
-
-  // Core / Abdômen
-  { id: "abd-supra",     grupo: "Core / Abdômen", name: "Abdominal supra",             reps: "3-4x15-20",        url: demoUrlTemplate("Abdominal supra no solo") },
-  { id: "abd-infra",     grupo: "Core / Abdômen", name: "Abdominal infra",             reps: "3-4x15-20",        url: demoUrlTemplate("Abdominal infra no banco") },
-  { id: "abd-obliquo",   grupo: "Core / Abdômen", name: "Abdominal oblíquo",           reps: "3-4x20 totais",    url: demoUrlTemplate("Abdominal oblíquo solo") },
-  { id: "prancha",       grupo: "Core / Abdômen", name: "Prancha isométrica",          reps: "3x30-40s",         url: demoUrlTemplate("Prancha isométrica abdômen") },
-  { id: "prancha-lat",   grupo: "Core / Abdômen", name: "Prancha lateral",             reps: "3x20-30s cada lado", url: demoUrlTemplate("Prancha lateral isométrica") },
-];
-
-// Preenche o menu suspenso com exercícios prontos na aba de configuração
-function initExerciseTemplates() {
-  const sel = document.getElementById("template-select");
-  if (!sel) return;
-
-  sel.innerHTML = `<option value="">-- selecione um exercício --</option>`;
-
-  EXERCISE_TEMPLATES.forEach(t => {
-    const opt = document.createElement("option");
-    opt.value = t.id;
-    opt.textContent = `${t.grupo} — ${t.name} (${t.reps})`;
-    sel.appendChild(opt);
-  });
-}
-
-// Ao selecionar um exercício pronto, preenche o formulário de configuração
-function applyExerciseTemplate() {
-  const sel = document.getElementById("template-select");
-  if (!sel) return;
-  const id = sel.value;
-  if (!id) return;
-
-  const t = EXERCISE_TEMPLATES.find(x => x.id === id);
-  if (!t) return;
-
-  const nameInput = document.getElementById("cfg-ex-name");
-  const repsInput = document.getElementById("cfg-ex-reps");
-  const gifInput  = document.getElementById("cfg-ex-gif");
-
-  if (nameInput) nameInput.value = t.name;
-  if (repsInput) repsInput.value = t.reps;
-  if (gifInput)  gifInput.value  = t.url || "";
-}
