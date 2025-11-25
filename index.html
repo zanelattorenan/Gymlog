@@ -1272,6 +1272,11 @@ function initNutritionDiary() {
       });
     }
 
+    // Renderiza botões de treinos também na aba de configuração
+    function renderConfigButtons() {
+      renderWorkoutButtons();
+    }
+
     function renderTodayView() {
       const container = document.getElementById("exercise-list");
       const btnSave = document.getElementById("save-today-btn");
@@ -1857,6 +1862,8 @@ function initNutritionDiary() {
       // Preenche o select de templates depois que o HTML foi injetado
       initExerciseTemplates();
     }
+
+    let editExerciseIndex = null;
 
     function clearConfigExerciseForm() {
       document.getElementById("cfg-ex-name").value = "";
