@@ -529,41 +529,46 @@
       </section>
 
       <!-- DIÁRIO ALIMENTAR -->
-      <section id="nutri-diary" class="space-y-4 hidden">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 text-sm">
-          <div>
-            <label class="block mb-1">Dia</label>
-            <input id="meal-date" type="date"
-                   class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700" />
-          </div>
-          <div id="nutri-day-target" class="text-xs text-slate-600 dark:text-slate-200">
-            Meta diária: -- kcal
-          </div>
-        </div>
+      <div class="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2 text-sm">
+  <p class="font-semibold">Registrar refeição</p>
+  <div class="grid md:grid-cols-4 gap-2 text-xs">
+    <!-- Tipo de refeição (mantido) -->
+    <select id="meal-type"
+            class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700">
+      <option value="Café da manhã">Café da manhã</option>
+      <option value="Lanche da manhã">Lanche da manhã</option>
+      <option value="Almoço">Almoço</option>
+      <option value="Lanche da tarde">Lanche da tarde</option>
+      <option value="Jantar">Jantar</option>
+      <option value="Ceia">Ceia</option>
+      <option value="Outro">Outro</option>
+    </select>
 
-        <div class="border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2 text-sm">
-          <p class="font-semibold">Registrar refeição</p>
-          <div class="grid md:grid-cols-4 gap-2 text-xs">
-            <select id="meal-type"
-                    class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700">
-              <option value="Café da manhã">Café da manhã</option>
-              <option value="Lanche da manhã">Lanche da manhã</option>
-              <option value="Almoço">Almoço</option>
-              <option value="Lanche da tarde">Lanche da tarde</option>
-              <option value="Jantar">Jantar</option>
-              <option value="Ceia">Ceia</option>
-              <option value="Outro">Outro</option>
-            </select>
-            <input id="meal-desc" type="text" placeholder="Ex: 2 ovos + 1 pão"
-                   class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700" />
-            <input id="meal-kcal" type="number" min="0" placeholder="Kcal estimada"
-                   class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700" />
-            <button class="bg-secondary text-white rounded px-2 py-1 hover:bg-emerald-700"
-                    onclick="addMeal()">
-              Adicionar
-            </button>
-          </div>
-        </div>
+    <!-- NOVO: menu suspenso com alimentos -->
+    <select id="meal-food"
+            class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700"
+            onchange="onMealFoodChange()">
+      <!-- opções serão preenchidas pelo JS (populateFoodOptions) -->
+    </select>
+
+    <!-- Descrição preenchida automaticamente pelo alimento escolhido -->
+    <input id="meal-desc" type="text" placeholder="Será preenchido pelo alimento"
+           class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700"
+           readonly />
+
+    <!-- Kcal estimada (auto-preenchida, mas editável para ajuste fino) -->
+    <input id="meal-kcal" type="number" min="0" placeholder="Kcal estimada"
+           class="border border-slate-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700" />
+
+    <!-- Como temos 4 colunas na grid, o botão vem embaixo ocupando tudo em telas pequenas -->
+    <div class="md:col-span-4 flex justify-end mt-1">
+      <button class="bg-secondary text-white rounded px-3 py-1 hover:bg-emerald-700"
+              onclick="addMeal()">
+        Adicionar
+      </button>
+    </div>
+  </div>
+</div>
 
         <div id="meal-summary" class="border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs space-y-2">
           <!-- resumo do dia -->
@@ -614,6 +619,100 @@
     let selectedWorkout = null;
     let currentMonth = new Date();
     let lastDayDetailsDate = null;
+                                // Lista básica de alimentos (você pode editar/expandir à vontade)
+    const FOOD_ITEMS = [
+      { label: "2 ovos + 1 pão francês", kcal: 320 },
+      { label: "2 ovos mexidos", kcal: 160 },
+      { label: "1 pão francês", kcal: 150 },
+      { label: "100 g frango grelhado", kcal: 165 },
+      { label: "150 g frango grelhado", kcal: 250 },
+      { label: "100 g carne moída", kcal: 250 },
+      { label: "100 g arroz cozido", kcal: 130 },
+      { label: "100 g feijão cozido", kcal: 80 },
+      { label: "1 banana média", kcal: 90 },
+      { label: "1 colher de sopa requeijão", kcal: 60 },
+      { label: "1 colher de sopa aveia (~15 g)", kcal: 55 },
+      { label: "1 colher de sopa mel", kcal: 60 },
+      { label: "1 scoop whey (30 g)", kcal: 110 },
+      // Adapte para sua realidade / clientes:
+      // { label: "Cafezinho sem açúcar (200 ml)", kcal: 4 },
+      // { label: "Leite integral (200 ml)", kcal: 120 },
+    ];
+
+
+    // Preenche o menu suspenso de alimentos
+    function populateFoodOptions() {
+      const select = document.getElementById("meal-food");
+      if (!select) return;
+
+      // Limpa opções
+      select.innerHTML = "";
+
+      // Placeholder
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Selecione o alimento";
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      select.appendChild(placeholder);
+
+      // Opções vindas da tabela
+      FOOD_ITEMS.forEach((item, idx) => {
+        const opt = document.createElement("option");
+        opt.value = String(idx); // índice do array
+        opt.textContent = `${item.label} (~${item.kcal} kcal)`;
+        select.appendChild(opt);
+      });
+
+      // Opção para alimento personalizado
+      const customOpt = document.createElement("option");
+      customOpt.value = "custom";
+      customOpt.textContent = "Outro alimento (preencher manualmente)";
+      select.appendChild(customOpt);
+    }
+
+    // Quando o usuário troca o alimento no select
+    function onMealFoodChange() {
+      const select = document.getElementById("meal-food");
+      const descInput = document.getElementById("meal-desc");
+      const kcalInput = document.getElementById("meal-kcal");
+      if (!select || !descInput || !kcalInput) return;
+
+      const value = select.value;
+  if (!value) return;
+
+  if (value === "other") {
+    descInput.readOnly = false;
+    kcalInput.readOnly = false;
+    descInput.value = "";
+    kcalInput.value = "";
+    descInput.focus();
+    return;
+  }
+
+      // Uma opção padrão
+      const index = parseInt(value, 10);
+      const item = FOOD_ITEMS[index];
+      if (!item) return;
+
+      descInput.readOnly = true;      // travamos a descrição para bater com o item
+      descInput.value = item.label;
+      kcalInput.readOnly = false;     // kcal pode ser ajustada se a porção for diferente
+      kcalInput.value = item.kcal;
+    }
+
+    function initNutritionDiary() {
+  const dateInput = document.getElementById("meal-date");
+  if (!dateInput) return;
+
+  dateInput.value = todayISO();
+  populateFoodOptions();
+  renderMealsForDate(dateInput.value);
+}
+
+    
+
+    
 
     // Timer treino de hoje
     let timerInterval = null;
@@ -1814,12 +1913,13 @@
 
     // ---------- ALIMENTAÇÃO: DIÁRIO ----------
 
-    function initNutritionDiary() {
-      const dateInput = document.getElementById("meal-date");
-      if (!dateInput) return;
-      dateInput.value = todayISO();
+     
+      // Preenche o menu de alimentos sempre que a tela de diário for iniciada
+      populateFoodOptions();
+
       renderMealsForDate(dateInput.value);
     }
+
 
     function getDayMeals(dateIso) {
       return meals.filter(m => m.date === dateIso);
