@@ -619,59 +619,56 @@
     let selectedWorkout = null;
     let currentMonth = new Date();
     let lastDayDetailsDate = null;
-                                // Lista básica de alimentos (você pode editar/expandir à vontade)
-    const FOOD_ITEMS = [
-      { label: "2 ovos + 1 pão francês", kcal: 320 },
-      { label: "2 ovos mexidos", kcal: 160 },
-      { label: "1 pão francês", kcal: 150 },
-      { label: "100 g frango grelhado", kcal: 165 },
-      { label: "150 g frango grelhado", kcal: 250 },
-      { label: "100 g carne moída", kcal: 250 },
-      { label: "100 g arroz cozido", kcal: 130 },
-      { label: "100 g feijão cozido", kcal: 80 },
-      { label: "1 banana média", kcal: 90 },
-      { label: "1 colher de sopa requeijão", kcal: 60 },
-      { label: "1 colher de sopa aveia (~15 g)", kcal: 55 },
-      { label: "1 colher de sopa mel", kcal: 60 },
-      { label: "1 scoop whey (30 g)", kcal: 110 },
-      // Adapte para sua realidade / clientes:
-      // { label: "Cafezinho sem açúcar (200 ml)", kcal: 4 },
-      // { label: "Leite integral (200 ml)", kcal: 120 },
-    ];
+    
+    // Lista básica de alimentos
+const FOOD_ITEMS = [
+  { label: "2 ovos + 1 pão francês", kcal: 320 },
+  { label: "2 ovos mexidos", kcal: 160 },
+  { label: "1 pão francês", kcal: 150 },
+  { label: "100 g frango grelhado", kcal: 165 },
+  { label: "150 g frango grelhado", kcal: 250 },
+  { label: "100 g carne moída", kcal: 250 },
+  { label: "100 g arroz cozido", kcal: 130 },
+  { label: "100 g feijão cozido", kcal: 80 },
+  { label: "1 banana média", kcal: 90 },
+  { label: "1 colher de sopa requeijão", kcal: 60 },
+  { label: "1 colher de sopa aveia (~15 g)", kcal: 55 },
+  { label: "1 colher de sopa mel", kcal: 60 },
+  { label: "1 scoop whey (30 g)", kcal: 110 },
+];
 
+// Preenche o menu suspenso de alimentos
+function populateFoodOptions() {
+  const select = document.getElementById("meal-food");
+  if (!select) return;
 
-    // Preenche o menu suspenso de alimentos
-    function populateFoodOptions() {
-      const select = document.getElementById("meal-food");
-      if (!select) return;
+  // Limpa opções
+  select.innerHTML = "";
 
-      // Limpa opções
-      select.innerHTML = "";
+  // Placeholder
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Selecione o alimento";
+  placeholder.disabled = true;
+  placeholder.selected = true;
+  select.appendChild(placeholder);
 
-      // Placeholder
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Selecione o alimento";
-      placeholder.disabled = true;
-      placeholder.selected = true;
-      select.appendChild(placeholder);
+  // Opções vindas da tabela
+  FOOD_ITEMS.forEach((item, idx) => {
+    const opt = document.createElement("option");
+    opt.value = String(idx); // índice do array
+    opt.textContent = `${item.label} (~${item.kcal} kcal)`;
+    select.appendChild(opt);
+  });
 
-      // Opções vindas da tabela
-      FOOD_ITEMS.forEach((item, idx) => {
-        const opt = document.createElement("option");
-        opt.value = String(idx); // índice do array
-        opt.textContent = `${item.label} (~${item.kcal} kcal)`;
-        select.appendChild(opt);
-      });
+  // Opção para alimento personalizado
+  const customOpt = document.createElement("option");
+  customOpt.value = "custom";
+  customOpt.textContent = "Outro alimento (preencher manualmente)";
+  select.appendChild(customOpt);
+}
 
-      // Opção para alimento personalizado
-      const customOpt = document.createElement("option");
-      customOpt.value = "custom";
-      customOpt.textContent = "Outro alimento (preencher manualmente)";
-      select.appendChild(customOpt);
-    }
-
-  // Quando o usuário troca o alimento no select
+// Quando o usuário troca o alimento no select
 function onMealFoodChange() {
   const select = document.getElementById("meal-food");
   const descInput = document.getElementById("meal-desc");
@@ -679,14 +676,21 @@ function onMealFoodChange() {
   if (!select || !descInput || !kcalInput) return;
 
   const value = select.value;
-  if (!value) return;
+
+  // Nada selecionado
+  if (!value) {
+    descInput.value = "";
+    kcalInput.value = "";
+    descInput.readOnly = true;
+    return;
+  }
 
   // Opção "Outro alimento"
   if (value === "custom") {
-    descInput.readOnly = false;
-    kcalInput.readOnly = false;
     descInput.value = "";
     kcalInput.value = "";
+    descInput.readOnly = false;   // pode digitar o que comeu
+    kcalInput.readOnly = false;   // e colocar a kcal manual
     descInput.focus();
     return;
   }
@@ -702,8 +706,8 @@ function onMealFoodChange() {
   kcalInput.value = item.kcal;
 }
 
-
-    function initNutritionDiary() {
+// Inicialização do diário
+function initNutritionDiary() {
   const dateInput = document.getElementById("meal-date");
   if (!dateInput) return;
 
@@ -712,7 +716,6 @@ function onMealFoodChange() {
   renderMealsForDate(dateInput.value);
 }
 
-    
 
     
 
