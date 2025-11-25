@@ -708,14 +708,16 @@ function onMealFoodChange() {
 
 // Inicialização do diário
 function initNutritionDiary() {
-  const dateInput = document.getElementById("meal-date");
-  if (!dateInput) return;
-
-  dateInput.value = todayISO();
+  // Sempre preenche o menu de alimentos
   populateFoodOptions();
-  renderMealsForDate(dateInput.value);
-}
 
+  // Se existir um campo de data, usa para o diário
+  const dateInput = document.getElementById("meal-date");
+  if (dateInput) {
+    dateInput.value = todayISO();
+    renderMealsForDate(dateInput.value);
+  }
+}
 
     
 
